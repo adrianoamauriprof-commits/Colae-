@@ -28,15 +28,42 @@
 </head>
 <body class="bg-black text-white font-sans min-h-screen flex flex-col justify-between selection:bg-[#39FF14] selection:text-black">
 
-  <!-- TELA DE LOGIN / CADASTRO -->
-  <div id="login-modal" class="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center p-6">
-    <div class="w-full max-w-sm flex flex-col items-center space-y-6">
+  <!-- TELA DE LOGIN / CADASTRO COM AUTENTICAÇÃO SOCIAL -->
+  <div id="login-modal" class="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center p-6 overflow-y-auto">
+    <div class="w-full max-w-sm flex flex-col items-center space-y-6 my-auto">
       <div class="text-center space-y-2">
         <i data-lucide="zap" class="text-[#39FF14] w-12 h-12 mx-auto fill-[#39FF14] animate-bounce"></i>
         <h1 class="text-5xl font-black tracking-wider neon-text lowercase">colaê</h1>
-        <p class="text-xs text-zinc-400">Entre, veja quem está perto e troque uma ideia.</p>
+        <p class="text-xs text-zinc-400">Entre com sua conta para colar com a galera perto de você.</p>
       </div>
 
+      <!-- BOTÕES DE LOGIN SOCIAL (GOOGLE / APPLE) -->
+      <div class="w-full space-y-3">
+        <button id="btn-login-google" type="button" class="w-full bg-zinc-900 border border-zinc-800 text-white font-semibold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-3 hover:bg-zinc-800 transition active:scale-95">
+          <svg class="w-5 h-5" viewBox="0 0 24 24">
+            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
+            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/>
+            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9c-.4-.8-.7-1.8-.7-2.8z"/>
+            <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16c1.8 3.7 5.6 7 10.1 7z"/>
+          </svg>
+          <span>Continuar com Google</span>
+        </button>
+
+        <button id="btn-login-apple" type="button" class="w-full bg-white text-black font-semibold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-3 hover:bg-zinc-200 transition active:scale-95">
+          <svg class="w-5 h-5 fill-current" viewBox="0 0 170 170">
+            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-5.05.22-9.98-1.83-14.8-6.16-3.26-2.83-7.18-7.53-11.75-14.11-6.85-9.89-12.19-20.73-16.03-32.53-3.84-11.8-5.76-23.01-5.76-33.63 0-13.04 3.15-24.02 9.45-32.95 6.3-8.93 14.46-13.48 24.47-13.65 4.67 0 9.78 1.15 15.33 3.45 5.55 2.3 9.46 3.45 11.72 3.45 2.07 0 6.09-1.2 12.06-3.6 5.98-2.4 11.09-3.5 15.34-3.3 10.87.55 19.56 4.8 26.08 12.76-9.68 5.88-14.38 13.92-14.1 24.12.33 9.35 4.02 17.06 11.08 23.13 4.24 3.69 9.02 6.2 14.35 7.52-2.39 6.96-5.55 13.71-9.48 20.25zm-22.95-104.9c0 6.31-2.34 12.31-7.03 18.01-5.87 7.07-13.04 11.1-21.5 10.33-.22-1.09-.33-2.18-.33-3.27 0-6.1 2.45-12.2 7.35-18.31 2.4-2.94 5.38-5.38 8.94-7.32 3.56-1.94 7.07-3.03 10.53-3.27.11 1.2.17 2.48.17 3.83z"/>
+          </svg>
+          <span>Continuar com Apple</span>
+        </button>
+      </div>
+
+      <div class="flex items-center w-full my-2">
+        <div class="flex-1 border-t border-zinc-800"></div>
+        <span class="px-3 text-[11px] text-zinc-500 uppercase tracking-wider">ou acesso rápido</span>
+        <div class="flex-1 border-t border-zinc-800"></div>
+      </div>
+
+      <!-- FORMULÁRIO RÁPIDO (SEM CAMPO DE FOTO DE PERFIL) -->
       <form id="form-login" class="w-full space-y-4">
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Seu Nome ou Apelido</label>
@@ -45,10 +72,6 @@
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Sua Idade</label>
           <input type="number" id="login-idade" required min="18" max="99" placeholder="Ex: 25" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#39FF14] transition">
-        </div>
-        <div>
-          <label class="text-xs text-zinc-400 font-medium block mb-1">Foto de Perfil (URL)</label>
-          <input type="url" id="login-foto" placeholder="https://..." class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
 
         <button type="submit" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-2">
@@ -139,19 +162,37 @@
       { id: "demo_6", nome: "Bruno", idade: 31, distKm: 8.5, distanciaStr: "8.5 km", foto: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&auto=format&fit=crop&q=80", online: false }
     ];
 
-    document.getElementById('form-login').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const nome = document.getElementById('login-nome').value.trim();
-      const idade = document.getElementById('login-idade').value;
-      let foto = document.getElementById('login-foto').value.trim() || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80";
+    function logarUsuario(nome, idade, foto = null) {
+      const fotoPadrao = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80";
+      meuPerfil = {
+        nome: nome || "Usuário Colaê",
+        idade: idade || 22,
+        foto: foto || fotoPadrao
+      };
 
-      meuPerfil = { nome, idade, foto };
       document.getElementById('login-modal').classList.add('hidden');
-      document.getElementById('img-perfil-header').src = foto;
+      document.getElementById('img-perfil-header').src = meuPerfil.foto;
       document.getElementById('minha-foto-header').classList.remove('hidden');
 
       socket.emit('registrar-usuario', meuPerfil);
       renderizarPerfis();
+    }
+
+    // Login Form Simples
+    document.getElementById('form-login').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const nome = document.getElementById('login-nome').value.trim();
+      const idade = document.getElementById('login-idade').value;
+      logarUsuario(nome, idade);
+    });
+
+    // Simulação Login Google / Apple
+    document.getElementById('btn-login-google').addEventListener('click', () => {
+      logarUsuario("Alexandre (Google)", 26, "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80");
+    });
+
+    document.getElementById('btn-login-apple').addEventListener('click', () => {
+      logarUsuario("Alexandre (Apple)", 26, "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80");
     });
 
     const grid = document.getElementById('grid-perfis');
@@ -280,3 +321,4 @@
   </script>
 </body>
 </html>
+
