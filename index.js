@@ -1,40 +1,404 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
-
-app.use(express.static('public'));
-
-io.on('connection', (socket) => {
-  console.log('Usuário conectado:', socket.id);
-
-  socket.on('registrar-usuario', (dados) => {
-    socket.usuario = dados;
-  });
-
-  socket.on('update-location', (coords) => {
-    if (socket.usuario) {
-      socket.usuario.lat = coords.lat;
-      socket.usuario.lng = coords.lng;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colaê - Encontros e Bate-Papo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .neon-text {
+      color: #39FF14;
+      text-shadow: 0 0 8px rgba(57, 255, 20, 0.6), 0 0 20px rgba(57, 255, 20, 0.3);
     }
-  });
+    .neon-border {
+      border-color: #39FF14;
+      box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+    }
+    .neon-bg {
+      background-color: #39FF14;
+      box-shadow: 0 0 12px rgba(57, 255, 20, 0.5);
+    }
+    input[type=range]::-webkit-slider-thumb {
+      background: #39FF14;
+      box-shadow: 0 0 10px #39FF14;
+    }
+  </style>
+</head>
+<body class="bg-black text-white font-sans min-h-screen flex flex-col justify-between selection:bg-[#39FF14] selection:text-black">
 
-  socket.on('send-private-message', (data) => {
-    io.to(data.paraId).emit('receive-private-message', {
-      deId: socket.id,
-      deNome: data.deNome,
-      texto: data.texto,
-      tipo: data.tipo || 'texto'
+  <!-- TELA DE AUTENTICAÇÃO (CADASTRO / LOGIN) -->
+  <div id="login-modal" class="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center p-6 overflow-y-auto">
+    <div class="w-full max-w-sm flex flex-col items-center space-y-5 my-auto">
+      <div class="text-center space-y-2">
+        <i data-lucide="zap" class="text-[#39FF14] w-12 h-12 mx-auto fill-[#39FF14] animate-bounce"></i>
+        <h1 class="text-5xl font-black tracking-wider neon-text lowercase">colaê</h1>
+        <p class="text-xs text-zinc-400">Entre com seu nickname ou crie seu perfil para colar com a galera.</p>
+      </div>
+
+      <!-- ABAS PARA ALTERNAR ENTRE LOGIN E CADASTRO -->
+      <div class="flex w-full bg-zinc-900 rounded-xl p-1 border border-zinc-800 text-xs font-bold">
+        <button id="tab-btn-cadastro" type="button" class="flex-1 py-2 rounded-lg bg-[#39FF14] text-black transition">Criar Conta</button>
+        <button id="tab-btn-login" type="button" class="flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition">Já tenho conta</button>
+      </div>
+
+      <!-- FORMULÁRIO DE CADASTRO INITIAL -->
+      <form id="form-cadastro" class="w-full space-y-3">
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Nome de Exibição</label>
+          <input type="text" id="cad-nome" required placeholder="Ex: Rodrigo Silva" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-xs text-zinc-400 font-medium block mb-1">Idade</label>
+            <input type="number" id="cad-idade" required min="18" max="99" placeholder="Ex: 25" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 font-medium block mb-1">Sexo</label>
+            <select id="cad-sexo" required class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Nickname (para acessos futuros)</label>
+          <input type="text" id="cad-nick" required placeholder="@rodrigo" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
+        </div>
+
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Senha</label>
+          <input type="password" id="cad-senha" required placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
+        </div>
+
+        <button type="submit" class="w-full neon-bg text-black font-bold py-3 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4">
+          <span>Cadastrar no Colaê</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </form>
+
+      <!-- FORMULÁRIO DE LOGIN (RETORNO) -->
+      <form id="form-login" class="w-full space-y-3 hidden">
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Seu Nickname</label>
+          <input type="text" id="login-nick" required placeholder="@rodrigo" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#39FF14] transition">
+        </div>
+
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Sua Senha</label>
+          <input type="password" id="login-senha" required placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#39FF14] transition">
+        </div>
+
+        <button type="submit" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4">
+          <span>Entrar na Conta</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- CABEÇALHO -->
+  <header class="sticky top-0 z-40 bg-black/90 backdrop-blur-md border-b border-zinc-900 px-4 py-3 flex justify-between items-center">
+    <div class="flex items-center space-x-2">
+      <i data-lucide="zap" class="text-[#39FF14] w-6 h-6 fill-[#39FF14]"></i>
+      <h1 class="text-2xl font-black tracking-wider neon-text lowercase">colaê</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="btn-gps" class="text-xs neon-bg text-black px-3.5 py-1.5 rounded-full font-bold transition hover:opacity-90 flex items-center gap-1.5">
+        <i data-lucide="locate-fixed" class="w-4 h-4"></i> GPS
+      </button>
+      <button id="btn-logout" title="Sair da Conta" class="text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-full hidden flex items-center gap-1">
+        <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+      </button>
+      <div id="minha-foto-header" class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden hidden">
+        <img id="img-perfil-header" src="" class="w-full h-full object-cover">
+      </div>
+    </div>
+  </header>
+
+  <!-- BARRA DE RECURSOS: FILTRO DE DISTÂNCIA -->
+  <div class="bg-zinc-950 px-4 py-2 text-xs border-b border-zinc-900 space-y-2">
+    <div class="flex justify-between items-center">
+      <span class="text-zinc-400 flex items-center gap-1">
+        <i data-lucide="sliders" class="w-3.5 h-3.5 text-[#39FF14]"></i> Raio de Distância:
+      </span>
+      <span id="label-distancia" class="text-[#39FF14] font-bold">Até 5.0 km</span>
+    </div>
+    <input type="range" id="filter-distancia" min="0.5" max="10" step="0.5" value="5" class="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#39FF14]">
+  </div>
+
+  <!-- GRADE DE PERFIS -->
+  <main class="flex-1 p-2 sm:p-4">
+    <div id="grid-perfis" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+      <!-- Perfis renderizados via JS -->
+    </div>
+  </main>
+
+  <!-- JANELA DE CHAT (MODAL) -->
+  <div id="chat-modal" class="fixed inset-0 bg-black z-50 flex flex-col hidden">
+    <div class="bg-zinc-950 px-4 py-3 border-b border-zinc-900 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <button id="btn-fechar-chat" class="p-1 text-zinc-400 hover:text-white">
+          <i data-lucide="arrow-left" class="w-6 h-6"></i>
+        </button>
+        <div>
+          <h3 id="chat-user-nome" class="font-bold text-sm text-white">Usuário</h3>
+          <p id="chat-user-distancia" class="text-[11px] text-[#39FF14]">Perto de você</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-black">
+      <div class="text-center text-xs text-zinc-600 my-2">Conversa iniciada no Colaê</div>
+    </div>
+
+    <div class="p-3 bg-zinc-950 border-t border-zinc-900 flex items-center space-x-2">
+      <button id="btn-envio-foto" title="Enviar Imagem" class="p-2.5 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-400 hover:text-[#39FF14] transition">
+        <i data-lucide="image" class="w-4 h-4"></i>
+      </button>
+      <input type="text" id="chat-input" placeholder="Manda um 'Colaê'..." class="flex-1 bg-zinc-900 text-sm text-white px-4 py-2.5 rounded-full border border-zinc-800 focus:outline-none focus:border-[#39FF14]">
+      <button id="btn-enviar" class="p-2.5 neon-bg rounded-full text-black hover:opacity-90 transition">
+        <i data-lucide="send" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let meuPerfil = null;
+    let usuarioAtivoId = null;
+
+    const usuariosDemo = [
+      { id: "demo_1", nome: "Lucas", idade: 24, sexo: "Masculino", distKm: 0.15, distanciaStr: "150 m", foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80", online: true },
+      { id: "demo_2", nome: "Mateus", idade: 28, sexo: "Masculino", distKm: 0.5, distanciaStr: "500 m", foto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80", online: true },
+      { id: "demo_3", nome: "Gabriel", idade: 22, sexo: "Masculino", distKm: 1.2, distanciaStr: "1.2 km", foto: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=80", online: false },
+      { id: "demo_4", nome: "Rodrigo", idade: 30, sexo: "Masculino", distKm: 2.5, distanciaStr: "2.5 km", foto: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=500&auto=format&fit=crop&q=80", online: true },
+      { id: "demo_5", nome: "Felipe", idade: 27, sexo: "Masculino", distKm: 4.8, distanciaStr: "4.8 km", foto: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=500&auto=format&fit=crop&q=80", online: true }
+    ];
+
+    // Alternar entre abas de cadastro e login
+    const btnTabCad = document.getElementById('tab-btn-cadastro');
+    const btnTabLog = document.getElementById('tab-btn-login');
+    const formCad = document.getElementById('form-cadastro');
+    const formLog = document.getElementById('form-login');
+
+    btnTabCad.addEventListener('click', () => {
+      btnTabCad.className = "flex-1 py-2 rounded-lg bg-[#39FF14] text-black transition font-bold";
+      btnTabLog.className = "flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition font-bold";
+      formCad.classList.remove('hidden');
+      formLog.classList.add('hidden');
     });
-  });
 
-  socket.on('disconnect', () => {
-    console.log('Usuário desconectou:', socket.id);
-  });
-});
+    btnTabLog.addEventListener('click', () => {
+      btnTabLog.className = "flex-1 py-2 rounded-lg bg-[#39FF14] text-black transition font-bold";
+      btnTabCad.className = "flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition font-bold";
+      formLog.classList.remove('hidden');
+      formCad.classList.add('hidden');
+    });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Colaê rodando na porta ${PORT}`));
+    // Função de Autenticação Concluída
+    function iniciarSessao(dadosUsuario) {
+      meuPerfil = dadosUsuario;
+      localStorage.setItem('colae_usuario', JSON.stringify(meuPerfil));
+
+      document.getElementById('login-modal').classList.add('hidden');
+      document.getElementById('img-perfil-header').src = meuPerfil.foto;
+      document.getElementById('minha-foto-header').classList.remove('hidden');
+      document.getElementById('btn-logout').classList.remove('hidden');
+
+      socket.emit('registrar-usuario', meuPerfil);
+      renderizarPerfis();
+    }
+
+    // Verificar se o usuário já tem login salvo no navegador
+    window.addEventListener('load', () => {
+      const sessaoSalva = localStorage.getItem('colae_usuario');
+      if (sessaoSalva) {
+        try {
+          const perfilSalvo = JSON.parse(sessaoSalva);
+          iniciarSessao(perfilSalvo);
+        } catch(e) {
+          localStorage.removeItem('colae_usuario');
+        }
+      }
+    });
+
+    // Submeter Cadastro
+    formCad.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const nome = document.getElementById('cad-nome').value.trim();
+      const idade = document.getElementById('cad-idade').value;
+      const sexo = document.getElementById('cad-sexo').value;
+      let nick = document.getElementById('cad-nick').value.trim().toLowerCase();
+      if (!nick.startsWith('@')) nick = '@' + nick;
+      const senha = document.getElementById('cad-senha').value;
+
+      const novoUsuario = {
+        nome,
+        idade,
+        sexo,
+        nick,
+        foto: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80"
+      };
+
+      // Salva conta localmente para testes
+      localStorage.setItem(`colae_account_${nick}`, JSON.stringify({ ...novoUsuario, senha }));
+      iniciarSessao(novoUsuario);
+    });
+
+    // Submeter Login
+    formLog.addEventListener('submit', (e) => {
+      e.preventDefault();
+      let nick = document.getElementById('login-nick').value.trim().toLowerCase();
+      if (!nick.startsWith('@')) nick = '@' + nick;
+      const senha = document.getElementById('login-senha').value;
+
+      const contaLocal = localStorage.getItem(`colae_account_${nick}`);
+      if (contaLocal) {
+        const conta = JSON.parse(contaLocal);
+        if (conta.senha === senha) {
+          iniciarSessao(conta);
+          return;
+        }
+      }
+      alert("Nickname ou senha incorretos!");
+    });
+
+    // Logout (Sair da Conta)
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      localStorage.removeItem('colae_usuario');
+      location.reload();
+    });
+
+    // Renderizar Perfis
+    const grid = document.getElementById('grid-perfis');
+    const filterInput = document.getElementById('filter-distancia');
+    const labelDistancia = document.getElementById('label-distancia');
+
+    function renderizarPerfis() {
+      grid.innerHTML = '';
+      const limiteKm = parseFloat(filterInput.value);
+      labelDistancia.innerText = `Até ${limiteKm.toFixed(1)} km`;
+
+      const filtrados = usuariosDemo.filter(u => u.distKm <= limiteKm);
+
+      if (filtrados.length === 0) {
+        grid.innerHTML = `<p class="col-span-full text-center text-xs text-zinc-500 py-8">Ninguém encontrado nesse raio. Aumente o filtro de distância!</p>`;
+        return;
+      }
+
+      filtrados.forEach(user => {
+        const card = document.createElement('div');
+        card.className = "relative group cursor-pointer overflow-hidden rounded-xl bg-zinc-950 border border-zinc-900 shadow-md transition hover:border-[#39FF14]";
+        card.innerHTML = `
+          <div class="aspect-square w-full overflow-hidden relative">
+            <img src="${user.foto}" alt="${user.nome}" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+          </div>
+          <div class="absolute top-2 right-2">
+            <span class="w-3 h-3 rounded-full block border-2 border-black ${user.online ? 'bg-[#39FF14]' : 'bg-zinc-600'}"></span>
+          </div>
+          <div class="absolute bottom-0 left-0 right-0 p-2.5 text-white">
+            <div class="flex items-baseline space-x-1">
+              <h2 class="font-bold text-sm truncate">${user.nome}</h2>
+              <span class="text-xs text-zinc-400">${user.idade}</span>
+            </div>
+            <p class="text-[11px] text-[#39FF14] font-medium flex items-center gap-0.5 mt-0.5">
+              <i data-lucide="navigation" class="w-3 h-3 fill-[#39FF14]"></i> ${user.distanciaStr}
+            </p>
+          </div>
+        `;
+
+        card.addEventListener('click', () => abrirChat(user.id, user.nome, user.distanciaStr));
+        grid.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    filterInput.addEventListener('input', renderizarPerfis);
+    renderizarPerfis();
+
+    // Lógica do Modal de Chat
+    const modalChat = document.getElementById('chat-modal');
+    const messagesBox = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+
+    function abrirChat(id, nome, distancia) {
+      if (!meuPerfil) return alert('Faça o login primeiro!');
+      usuarioAtivoId = id;
+      document.getElementById('chat-user-nome').innerText = nome;
+      document.getElementById('chat-user-distancia').innerText = distancia;
+      messagesBox.innerHTML = '<div class="text-center text-xs text-zinc-600 my-2">Conversa iniciada no Colaê</div>';
+      modalChat.classList.remove('hidden');
+    }
+
+    document.getElementById('btn-fechar-chat').addEventListener('click', () => {
+      modalChat.classList.add('hidden');
+      usuarioAtivoId = null;
+    });
+
+    function adicionarMensagemTela(conteudo, eMinha = true, eImagem = false) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `flex ${eMinha ? 'justify-end' : 'justify-start'}`;
+
+      let inner = '';
+      if (eImagem) {
+        inner = `<img src="${conteudo}" class="max-w-[220px] rounded-2xl border border-zinc-800 shadow-md">`;
+      } else {
+        inner = `
+          <div class="${eMinha ? 'bg-[#39FF14] text-black font-medium' : 'bg-zinc-900 text-white border border-zinc-800'} text-sm px-4 py-2 rounded-2xl ${eMinha ? 'rounded-tr-none' : 'rounded-tl-none'} max-w-[80%] shadow-lg">
+            ${conteudo}
+          </div>
+        `;
+      }
+
+      msgDiv.innerHTML = inner;
+      messagesBox.appendChild(msgDiv);
+      messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    function enviarMensagem() {
+      const texto = chatInput.value.trim();
+      if (!texto || !usuarioAtivoId) return;
+
+      adicionarMensagemTela(texto, true, false);
+
+      socket.emit('send-private-message', {
+        paraId: usuarioAtivoId,
+        deNome: meuPerfil.nome,
+        texto: texto,
+        tipo: 'texto'
+      });
+
+      chatInput.value = '';
+    }
+
+    document.getElementById('btn-envio-foto').addEventListener('click', () => {
+      const urlFoto = prompt("Cole a URL da foto que deseja enviar:");
+      if (urlFoto && usuarioAtivoId) {
+        adicionarMensagemTela(urlFoto, true, true);
+        socket.emit('send-private-message', {
+          paraId: usuarioAtivoId,
+          deNome: meuPerfil.nome,
+          texto: urlFoto,
+          tipo: 'imagem'
+        });
+      }
+    });
+
+    document.getElementById('btn-enviar').addEventListener('click', enviarMensagem);
+    chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); });
+
+    socket.on('receive-private-message', (data) => {
+      if (!modalChat.classList.contains('hidden')) {
+        adicionarMensagemTela(data.texto, false, data.tipo === 'imagem');
+      }
+    });
+  </script>
+</body>
+</html>
