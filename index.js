@@ -7,32 +7,34 @@ const server = http.createServer(app);
 
 const io = new Server(server, { 
   cors: { origin: "*" },
-  maxHttpBufferSize: 1e7 // 10MB para imagens em Base64
+  maxHttpBufferSize: 1e7 // 10MB para imagens
 });
 
 app.use(express.static('public'));
 
-let contasCadastradas = {}; 
-let socketsConectados = {}; 
+let contasCadastradas = {}; // nickKey -> dados do usuário
+let socketsConectados = {}; // socket.id -> nickKey
 
 io.on('connection', (socket) => {
-  console.log('Novo cliente conectado:', socket.id);
+  console.log('Cliente conectado:', socket.id);
 
   socket.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
     const { senha, ...perfilPublico } = u;
     return perfilPublico;
   }));
 
+  // REGISTRO E ATUALIZAÇÃO AUTOMÁTICA DE SOCKET ID
   socket.on('registrar-usuario', (dados) => {
     if (!dados || !dados.nick) return;
-    const nickKey = dados.nick.toLowerCase();
+    let nickKey = dados.nick.trim().toLowerCase();
+    if (!nickKey.startsWith('@')) nickKey = '@' + nickKey;
 
     if (!contasCadastradas[nickKey]) {
       contasCadastradas[nickKey] = {
-        nick: dados.nick,
+        nick: nickKey,
         senha: dados.senha || '123456',
-        nome: dados.nome || dados.nick.replace('@', ''),
-        email: dados.email || '',
+        nome: dados.nome || nickKey.replace('@', ''),
+        email: (dados.email || '').toLowerCase(),
         idade: dados.idade || 18,
         sexo: dados.sexo || 'Outro',
         foto: dados.foto || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80',
@@ -46,7 +48,9 @@ io.on('connection', (socket) => {
     } else {
       contasCadastradas[nickKey].socketId = socket.id;
       contasCadastradas[nickKey].status = 'online';
-      if (dados.foto) contasCadastradas[nickKey].foto = dados.foto;
+      if (dados.foto && dados.foto.startsWith('data:image')) {
+        contasCadastradas[nickKey].foto = dados.foto;
+      }
       if (dados.nome) contasCadastradas[nickKey].nome = dados.nome;
     }
 
@@ -58,12 +62,14 @@ io.on('connection', (socket) => {
     }));
   });
 
+  // CADASTRO MANUAL
   socket.on('solicitar-cadastro', (dados) => {
     if (!dados || !dados.nick) return;
-    const nickKey = dados.nick.toLowerCase();
+    let nickKey = dados.nick.trim().toLowerCase();
+    if (!nickKey.startsWith('@')) nickKey = '@' + nickKey;
 
     const novoUsuario = {
-      nick: dados.nick,
+      nick: nickKey,
       senha: dados.senha,
       nome: dados.nome,
       email: dados.email ? dados.email.toLowerCase() : "",
@@ -90,16 +96,19 @@ io.on('connection', (socket) => {
     }));
   });
 
+  // LOGIN
   socket.on('solicitar-login', (dados) => {
     if (!dados || !dados.nick) return;
-    const nickKey = dados.nick.toLowerCase();
+    let nickKey = dados.nick.trim().toLowerCase();
+    if (!nickKey.startsWith('@')) nickKey = '@' + nickKey;
+
     let conta = contasCadastradas[nickKey];
 
     if (!conta) {
       conta = {
-        nick: dados.nick,
+        nick: nickKey,
         senha: dados.senha,
-        nome: dados.nick.replace('@', ''),
+        nome: nickKey.replace('@', ''),
         email: '',
         idade: 18,
         sexo: 'Outro',
@@ -129,12 +138,12 @@ io.on('connection', (socket) => {
     }));
   });
 
+  // RECUPERAÇÃO DE SENHA
   socket.on('solicitar-codigo-email', (email) => {
     const emailProc = (email || '').toLowerCase();
     const conta = Object.values(contasCadastradas).find(u => u.email === emailProc);
     const codigo = '123456';
     if (conta) conta.codigoRecuperacao = codigo;
-
     socket.emit('resposta-codigo-email', { sucesso: true, codigo: codigo, email: emailProc });
   });
 
@@ -151,6 +160,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // STATUS
   socket.on('change-status', (novoStatus) => {
     const nickKey = socketsConectados[socket.id];
     if (nickKey && contasCadastradas[nickKey]) {
@@ -162,20 +172,32 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ROTEAMENTO BLINDADO DE MENSAGENS PRIVADAS (TEXTO E FOTOS)
   socket.on('send-private-message', (data) => {
     const remetenteNickKey = socketsConectados[socket.id];
     let remetente = remetenteNickKey ? contasCadastradas[remetenteNickKey] : null;
 
     if (!remetente && data.deNick) {
-      remetente = contasCadastradas[data.deNick.toLowerCase()];
+      let dNick = data.deNick.trim().toLowerCase();
+      if (!dNick.startsWith('@')) dNick = '@' + dNick;
+      remetente = contasCadastradas[dNick];
     }
-    
-    const destNickKey = (data.paraNick || '').toLowerCase();
+
+    // Tenta encontrar o destinatário por várias formas para garantir entrega
+    let destNickKey = (data.paraNick || '').trim().toLowerCase();
+    if (destNickKey && !destNickKey.startsWith('@')) destNickKey = '@' + destNickKey;
+
     let destinatario = contasCadastradas[destNickKey];
 
+    // Se não achou pelo nick, busca pelo ID do socket
     if (!destinatario && data.paraId) {
       const nickEncontrado = socketsConectados[data.paraId];
       if (nickEncontrado) destinatario = contasCadastradas[nickEncontrado];
+    }
+
+    // Se ainda não achou, varre todas as contas ativas para ver qual bate com o socketId
+    if (!destinatario && data.paraId) {
+      destinatario = Object.values(contasCadastradas).find(u => u.socketId === data.paraId);
     }
 
     if (destinatario && destinatario.socketId) {
@@ -191,6 +213,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // DESCONEXÃO
   socket.on('disconnect', () => {
     const nickKey = socketsConectados[socket.id];
     if (nickKey && contasCadastradas[nickKey]) {
