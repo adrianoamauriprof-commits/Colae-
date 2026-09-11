@@ -14,19 +14,16 @@ const io = new Server(server, {
 
 app.use(express.static('public'));
 
-// ARQUIVO DE PERSISTÊNCIA PARA NÃO PERDER CONTAS AO REINICIAR O SERVER
 const ARQUIVO_DADOS = path.join(__dirname, 'dados.json');
-
 let contasCadastradas = {};
 
-// Carrega contas salvas anteriormente, se existirem
 if (fs.existsSync(ARQUIVO_DADOS)) {
   try {
     const dadosSalvos = fs.readFileSync(ARQUIVO_DADOS, 'utf8');
     contasCadastradas = JSON.parse(dadosSalvos);
-    console.log('Contas carregadas do arquivo com sucesso:', Object.keys(contasCadastradas).length);
+    console.log('Contas carregadas com sucesso:', Object.keys(contasCadastradas).length);
   } catch (e) {
-    console.error('Erro ao carregar dados salvos:', e);
+    console.error('Erro ao carregar dados:', e);
   }
 }
 
@@ -34,7 +31,7 @@ function salvarDadosNoDisco() {
   try {
     fs.writeFileSync(ARQUIVO_DADOS, JSON.stringify(contasCadastradas, null, 2), 'utf8');
   } catch (e) {
-    console.error('Erro ao salvar dados no disco:', e);
+    console.error('Erro ao salvar dados:', e);
   }
 }
 
@@ -54,7 +51,7 @@ io.on('connection', (socket) => {
     if (!contasCadastradas[nickKey]) {
       contasCadastradas[nickKey] = {
         nick: nickKey,
-        senha: dados.senha || '123456',
+        senha: dados.senha || 'google_auth_secure',
         nome: dados.nome || nickKey.replace('@', ''),
         email: (dados.email || '').toLowerCase(),
         idade: dados.idade || 18,
@@ -72,18 +69,9 @@ io.on('connection', (socket) => {
     } else {
       contasCadastradas[nickKey].socketId = socket.id;
       contasCadastradas[nickKey].status = 'online';
-      if (dados.foto !== undefined) {
-        contasCadastradas[nickKey].foto = dados.foto;
-      }
-      if (dados.senha) contasCadastradas[nickKey].senha = dados.senha;
+      if (dados.foto) contasCadastradas[nickKey].foto = dados.foto;
       if (dados.nome) contasCadastradas[nickKey].nome = dados.nome;
-      if (dados.idade) contasCadastradas[nickKey].idade = dados.idade;
-      if (dados.sexo) contasCadastradas[nickKey].sexo = dados.sexo;
-      if (dados.orientacao) contasCadastradas[nickKey].orientacao = dados.orientacao;
-      if (dados.papel) contasCadastradas[nickKey].papel = dados.papel;
-      if (dados.bio !== undefined) contasCadastradas[nickKey].bio = dados.bio;
-      if (dados.altura !== undefined) contasCadastradas[nickKey].altura = dados.altura;
-      if (dados.procura) contasCadastradas[nickKey].procura = dados.procura;
+      if (dados.email) contasCadastradas[nickKey].email = dados.email.toLowerCase();
     }
 
     salvarDadosNoDisco();
@@ -131,7 +119,7 @@ io.on('connection', (socket) => {
       socket.emit('resposta-login', { sucesso: false, erro: 'Nickname não cadastrado!' });
       return;
     }
-    if (conta.senha !== dados.senha) {
+    if (conta.senha !== dados.senha && conta.senha !== 'google_auth_secure') {
       socket.emit('resposta-login', { sucesso: false, erro: 'Senha incorreta!' });
       return;
     }
@@ -150,25 +138,57 @@ io.on('connection', (socket) => {
     }));
   });
 
-  socket.on('solicitar-codigo-email', (email) => {
-    const emailProc = (email || '').toLowerCase();
-    const conta = Object.values(contasCadastradas).find(u => u.email === emailProc);
-    const codigo = '123456';
-    socket.emit('resposta-codigo-email', { sucesso: true, codigo: codigo, email: emailProc });
-  });
+  socket.on('google-auth', (dadosGoogle) => {
+    if (!dadosGoogle || !dadosGoogle.email) return;
+    const emailLimpo = dadosGoogle.email.toLowerCase();
+    
+    let contaExistente = Object.values(contasCadastradas).find(u => u.email === emailLimpo);
 
-  socket.on('solicitar-redefinicao-senha', (dados) => {
-    const emailProc = (dados.email || '').toLowerCase();
-    const conta = Object.values(contasCadastradas).find(u => u.email === emailProc);
-
-    if (conta) {
-      conta.senha = dados.novaSenha;
-      salvarDadosNoDisco();
-      const { senha, ...perfilPublico } = conta;
-      socket.emit('resposta-redefinicao-senha', { sucesso: true, usuario: perfilPublico });
+    let usuario;
+    if (contaExistente) {
+      usuario = contaExistente;
+      usuario.socketId = socket.id;
+      usuario.status = 'online';
+      if (dadosGoogle.foto && !usuario.foto) usuario.foto = dadosGoogle.foto;
     } else {
-      socket.emit('resposta-redefinicao-senha', { sucesso: false, erro: 'Conta não encontrada.' });
+      let baseNick = '@' + emailLimpo.split('@')[0].replace(/[^a-z0-9]/g, '');
+      let nickKey = baseNick;
+      let contador = 1;
+      while (contasCadastradas[nickKey]) {
+        nickKey = baseNick + contador;
+        contador++;
+      }
+
+      usuario = {
+        nick: nickKey,
+        senha: 'google_auth_secure',
+        nome: dadosGoogle.nome || 'Usuário Google',
+        email: emailLimpo,
+        idade: 18,
+        sexo: 'Outro',
+        orientacao: 'Heterossexual',
+        papel: 'Versátil',
+        foto: dadosGoogle.foto || '',
+        bio: '',
+        altura: '',
+        procura: 'Trocar uma ideia',
+        status: 'online',
+        socketId: socket.id,
+        distKm: (Math.random() * 4.5 + 0.1).toFixed(2)
+      };
+      contasCadastradas[nickKey] = usuario;
     }
+
+    salvarDadosNoDisco();
+    socket.join(usuario.nick);
+
+    const { senha, ...perfilPublico } = usuario;
+    socket.emit('resposta-google-auth', { sucesso: true, usuario: perfilPublico });
+
+    io.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
+      const { senha, ...p } = u;
+      return p;
+    }));
   });
 
   socket.on('change-status', (novoStatus) => {
@@ -216,7 +236,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    const conta = Object.values(contasCadastradas).liberado ? null : Object.values(contasCadastradas).find(u => u.socketId === socket.id);
+    const conta = Object.values(contasCadastradas).find(u => u.socketId === socket.id);
     if (conta) {
       conta.status = 'offline';
       conta.socketId = null;
