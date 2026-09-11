@@ -7,23 +7,22 @@ const server = http.createServer(app);
 
 const io = new Server(server, { 
   cors: { origin: "*" },
-  maxHttpBufferSize: 1e7 // 10MB para imagens
+  maxHttpBufferSize: 1e7
 });
 
 app.use(express.static('public'));
 
-let contasCadastradas = {}; // nickKey -> dados do usuário
-let socketsConectados = {}; // socket.id -> nickKey
+let contasCadastradas = {}; 
+let socketsConectados = {}; 
 
 io.on('connection', (socket) => {
-  console.log('Cliente conectado:', socket.id);
+  console.log('>>> Novo cliente conectado:', socket.id);
 
   socket.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
     const { senha, ...perfilPublico } = u;
     return perfilPublico;
   }));
 
-  // REGISTRO E ATUALIZAÇÃO AUTOMÁTICA DE SOCKET ID
   socket.on('registrar-usuario', (dados) => {
     if (!dados || !dados.nick) return;
     let nickKey = dados.nick.trim().toLowerCase();
@@ -55,6 +54,7 @@ io.on('connection', (socket) => {
     }
 
     socketsConectados[socket.id] = nickKey;
+    console.log(`[REGISTRO] Usuário ${nickKey} associado ao socket ${socket.id}`);
 
     io.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
       const { senha, ...p } = u;
@@ -62,7 +62,6 @@ io.on('connection', (socket) => {
     }));
   });
 
-  // CADASTRO MANUAL
   socket.on('solicitar-cadastro', (dados) => {
     if (!dados || !dados.nick) return;
     let nickKey = dados.nick.trim().toLowerCase();
@@ -96,7 +95,6 @@ io.on('connection', (socket) => {
     }));
   });
 
-  // LOGIN
   socket.on('solicitar-login', (dados) => {
     if (!dados || !dados.nick) return;
     let nickKey = dados.nick.trim().toLowerCase();
@@ -138,7 +136,6 @@ io.on('connection', (socket) => {
     }));
   });
 
-  // RECUPERAÇÃO DE SENHA
   socket.on('solicitar-codigo-email', (email) => {
     const emailProc = (email || '').toLowerCase();
     const conta = Object.values(contasCadastradas).find(u => u.email === emailProc);
@@ -160,7 +157,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // STATUS
   socket.on('change-status', (novoStatus) => {
     const nickKey = socketsConectados[socket.id];
     if (nickKey && contasCadastradas[nickKey]) {
@@ -172,8 +168,10 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ROTEAMENTO BLINDADO DE MENSAGENS PRIVADAS (TEXTO E FOTOS)
+  // MENSAGEM PRIVADA COM LOGS DE DEPURAÇÃO
   socket.on('send-private-message', (data) => {
+    console.log('[MSG RECEBIDA NO SERVER]', data);
+
     const remetenteNickKey = socketsConectados[socket.id];
     let remetente = remetenteNickKey ? contasCadastradas[remetenteNickKey] : null;
 
@@ -183,24 +181,22 @@ io.on('connection', (socket) => {
       remetente = contasCadastradas[dNick];
     }
 
-    // Tenta encontrar o destinatário por várias formas para garantir entrega
     let destNickKey = (data.paraNick || '').trim().toLowerCase();
     if (destNickKey && !destNickKey.startsWith('@')) destNickKey = '@' + destNickKey;
 
     let destinatario = contasCadastradas[destNickKey];
 
-    // Se não achou pelo nick, busca pelo ID do socket
     if (!destinatario && data.paraId) {
       const nickEncontrado = socketsConectados[data.paraId];
       if (nickEncontrado) destinatario = contasCadastradas[nickEncontrado];
     }
 
-    // Se ainda não achou, varre todas as contas ativas para ver qual bate com o socketId
     if (!destinatario && data.paraId) {
       destinatario = Object.values(contasCadastradas).find(u => u.socketId === data.paraId);
     }
 
     if (destinatario && destinatario.socketId) {
+      console.log(`[ENVIANDO DE] ${remetente ? remetente.nick : 'Desconhecido'} [PARA] ${destinatario.nick} (Socket: ${destinatario.socketId})`);
       io.to(destinatario.socketId).emit('receive-private-message', {
         deId: socket.id,
         deNick: remetente ? remetente.nick : (data.deNick || '@usuario'),
@@ -210,10 +206,11 @@ io.on('connection', (socket) => {
         tipo: data.tipo || 'texto',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
+    } else {
+      console.log('[ERRO] Destinatário não encontrado ou sem socketId ativo:', data);
     }
   });
 
-  // DESCONEXÃO
   socket.on('disconnect', () => {
     const nickKey = socketsConectados[socket.id];
     if (nickKey && contasCadastradas[nickKey]) {
