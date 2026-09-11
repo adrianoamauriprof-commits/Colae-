@@ -26,12 +26,26 @@
 
   <!-- NOTIFICAÇÃO TOAST -->
   <div id="toast-notificacao" class="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-zinc-900 border border-[#39FF14] text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 hidden transition-all max-w-xs w-full">
-    <div class="w-10 h-10 rounded-full overflow-hidden border border-[#39FF14] flex-shrink-0">
-      <img id="toast-foto" src="" class="w-full h-full object-cover">
+    <div id="toast-foto-container" class="w-10 h-10 rounded-full overflow-hidden border border-[#39FF14] flex-shrink-0 flex items-center justify-center bg-zinc-800">
+      <img id="toast-foto" src="" class="w-full h-full object-cover hidden">
+      <svg id="toast-svg-placeholder" class="w-6 h-6 text-zinc-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
     </div>
     <div class="flex-1 overflow-hidden">
       <h4 id="toast-nome" class="font-bold text-xs text-[#39FF14] truncate">---</h4>
       <p id="toast-msg" class="text-xs text-zinc-300 truncate">---</p>
+    </div>
+  </div>
+
+  <!-- MODAL DE SELEÇÃO DE ORIENTAÇÃO SEXUAL -->
+  <div id="modal-sexualidades" class="fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4 hidden">
+    <div class="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-xs p-5 space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-sm font-bold text-[#39FF14]">Selecione a Orientação Sexual</h3>
+        <button type="button" onclick="fecharModalSexualidades()" class="text-zinc-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div id="lista-opcoes-sexualidade" class="space-y-1.5 max-h-60 overflow-y-auto">
+        <!-- Preenchido via script -->
+      </div>
     </div>
   </div>
 
@@ -53,12 +67,15 @@
       <div id="box-cadastro" class="w-full space-y-3">
         <div class="flex flex-col items-center space-y-2">
           <div class="relative w-20 h-20 rounded-full bg-zinc-900 border-2 border-[#39FF14] overflow-hidden flex items-center justify-center group cursor-pointer" onclick="document.getElementById('cad-foto-input').click()">
-            <img id="cad-foto-preview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover">
+            <img id="cad-foto-preview" src="" class="w-full h-full object-cover hidden">
+            <div id="cad-placeholder-icon" class="text-zinc-500 flex flex-col items-center justify-center w-full h-full">
+              <i data-lucide="user" class="w-8 h-8"></i>
+            </div>
             <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition">
               <i data-lucide="camera" class="w-6 h-6 text-white"></i>
             </div>
           </div>
-          <button type="button" onclick="document.getElementById('cad-foto-input').click()" class="text-xs text-[#39FF14] font-medium hover:underline cursor-pointer">Escolher Foto da Galeria</button>
+          <button type="button" onclick="document.getElementById('cad-foto-input').click()" class="text-xs text-[#39FF14] font-medium hover:underline cursor-pointer">Adicionar Foto de Perfil</button>
           <input type="file" id="cad-foto-input" accept="image/*" class="hidden">
         </div>
 
@@ -84,6 +101,23 @@
               <option value="Feminino">Feminino</option>
               <option value="Outro">Outro</option>
             </select>
+          </div>
+        </div>
+
+        <!-- ORIENTAÇÃO SEXUAL -->
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Orientação Sexual</label>
+          <button type="button" onclick="abrirModalSexualidades('cad')" id="cad-btn-sexualidade" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm text-left flex justify-between items-center cursor-pointer hover:border-[#39FF14]">
+            <span id="cad-sex-text">Selecione...</span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-400"></i>
+          </button>
+        </div>
+
+        <!-- PAPEL / PREFERÊNCIA (CHAVES SELECIONÁVEIS) -->
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Papel / Preferência</label>
+          <div id="cad-papel-container" class="grid grid-cols-2 gap-2">
+            <!-- Gerado via script -->
           </div>
         </div>
 
@@ -182,12 +216,14 @@
       <h1 class="text-2xl font-black tracking-wider neon-text lowercase">colaê</h1>
     </div>
     <div class="flex items-center gap-2">
+      <button id="btn-perfil-header" onclick="abrirConfigPerfil()" title="Meu Perfil" class="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 overflow-hidden hidden flex items-center justify-center cursor-pointer hover:border-[#39FF14]">
+        <img id="img-perfil-header" src="" class="w-full h-full object-cover hidden">
+        <span id="icon-perfil-header" class="text-zinc-400 flex items-center justify-center w-full h-full"></span>
+      </button>
+
       <button id="btn-logout" onclick="fazerLogout()" title="Sair" class="text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-full hidden flex items-center gap-1 cursor-pointer">
         <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
       </button>
-      <div id="minha-foto-header" class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden hidden">
-        <img id="img-perfil-header" src="" class="w-full h-full object-cover">
-      </div>
     </div>
   </header>
 
@@ -240,7 +276,7 @@
     </button>
   </nav>
 
-  <!-- MODAL DE PERFIL EXPANSÍVEL -->
+  <!-- MODAL DE PERFIL EXPANSÍVEL (OUTROS USUÁRIOS) -->
   <div id="profile-modal" class="fixed inset-0 z-50 bg-black/95 flex flex-col justify-end hidden">
     <div class="bg-zinc-950 border-t border-zinc-800 rounded-t-3xl max-h-[90vh] overflow-y-auto p-5 relative space-y-4">
       <button type="button" onclick="fecharModalPerfil()" class="absolute top-4 right-4 p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white cursor-pointer">
@@ -248,12 +284,17 @@
       </button>
 
       <div class="flex items-center space-x-4">
-        <div class="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-[#39FF14]">
-          <img id="prof-modal-foto" src="" class="w-full h-full object-cover">
+        <div id="prof-modal-foto-box" class="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-[#39FF14] flex items-center justify-center bg-zinc-900">
+          <img id="prof-modal-foto" src="" class="w-full h-full object-cover hidden">
+          <div id="prof-modal-svg" class="w-12 h-12 text-zinc-400 flex items-center justify-center"></div>
         </div>
         <div>
           <h2 id="prof-modal-nome-idade" class="text-xl font-bold text-white">---</h2>
           <p id="prof-modal-nick" class="text-xs text-zinc-400">@---</p>
+          <div class="flex flex-wrap gap-1.5 mt-1">
+            <span id="prof-modal-orientacao" class="text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md text-[#39FF14] font-medium">---</span>
+            <span id="prof-modal-papel" class="text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md text-zinc-300 font-medium">---</span>
+          </div>
           <div class="flex items-center gap-2 mt-1">
             <span id="prof-modal-status-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold">
               ● Online
@@ -284,6 +325,88 @@
       <button type="button" onclick="iniciarChatDoPerfil()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 cursor-pointer">
         <i data-lucide="message-square" class="w-4 h-4"></i>
         <span>Mandar Mensagem Privada</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIGURAÇÃO DE PERFIL DO PRÓPRIO USUÁRIO -->
+  <div id="config-perfil-modal" class="fixed inset-0 z-50 bg-black/95 flex flex-col justify-end hidden">
+    <div class="bg-zinc-950 border-t border-zinc-800 rounded-t-3xl max-h-[90vh] overflow-y-auto p-5 relative space-y-4">
+      <button type="button" onclick="fecharConfigPerfil()" class="absolute top-4 right-4 p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white cursor-pointer">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <h3 class="text-base font-bold text-[#39FF14]">Configurações do Perfil</h3>
+
+      <div class="flex flex-col items-center space-y-2">
+        <div class="relative w-24 h-24 rounded-full bg-zinc-900 border-2 border-[#39FF14] overflow-hidden flex items-center justify-center group cursor-pointer" onclick="document.getElementById('edit-foto-input').click()">
+          <img id="edit-foto-preview" src="" class="w-full h-full object-cover hidden">
+          <div id="edit-placeholder-icon" class="text-zinc-400 flex items-center justify-center w-full h-full"></div>
+          <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition">
+            <i data-lucide="camera" class="w-6 h-6 text-white"></i>
+          </div>
+        </div>
+        <button type="button" onclick="document.getElementById('edit-foto-input').click()" class="text-xs text-[#39FF14] font-medium hover:underline cursor-pointer">Alterar Foto de Perfil</button>
+        <input type="file" id="edit-foto-input" accept="image/*" class="hidden">
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Nome</label>
+          <input type="text" id="edit-nome" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14]">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-xs text-zinc-400 font-medium block mb-1">Idade</label>
+            <input type="number" id="edit-idade" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14]">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 font-medium block mb-1">Sexo</label>
+            <select id="edit-sexo" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#39FF14]">
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Orientação Sexual</label>
+          <button type="button" onclick="abrirModalSexualidades('edit')" id="edit-btn-sexualidade" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm text-left flex justify-between items-center cursor-pointer hover:border-[#39FF14]">
+            <span id="edit-sex-text">Selecione...</span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-400"></i>
+          </button>
+        </div>
+
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Papel / Preferência</label>
+          <div id="edit-papel-container" class="grid grid-cols-2 gap-2">
+            <!-- Gerado via script -->
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Bio / Sobre mim</label>
+          <textarea id="edit-bio" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#39FF14] resize-none h-16"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-xs text-zinc-400 font-medium block mb-1">Altura (cm)</label>
+            <input type="number" id="edit-altura" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#39FF14]">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 font-medium block mb-1">Procura no App</label>
+            <select id="edit-procura" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-2 py-2 text-sm focus:outline-none focus:border-[#39FF14]">
+              <option value="Trocar uma ideia">Trocar uma ideia</option>
+              <option value="Rolê casual">Rolê casual</option>
+              <option value="Amizade">Amizade</option>
+              <option value="Relacionamento">Relacionamento</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" onclick="salvarConfigPerfil()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 cursor-pointer">
+        <span>Salvar Alterações</span>
       </button>
     </div>
   </div>
@@ -330,29 +453,97 @@
     let filtroSomenteOnline = false;
     let fotoPerfilCadastradaBase64 = "";
     let emailRecuperacaoGlobal = "";
+    let orientacaoSelecionadaTemp = "Heterossexual";
+    let papelSelecionadoTemp = "Versátil";
 
     let usuariosReaisConectados = [];
     let conversasInbox = JSON.parse(localStorage.getItem('colae_inbox') || '{}');
     let historicoMensagens = JSON.parse(localStorage.getItem('colae_historico_msgs') || '{}');
 
-    function tocarSomNotificacao() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15);
-      } catch(e) {}
-    }
+    const listaSexualidades = [
+      "Heterossexual",
+      "Homossexual",
+      "Bissexual",
+      "Pansexual",
+      "Assexual",
+      "Demissexual",
+      "Queer",
+      "Fluido",
+      "Outro"
+    ];
+
+    const listapapeis = ["Ativo", "Passivo", "Versátil", "Prefiro não responder"];
+
+    const svgsSilhuetas = {
+      Masculino: `<svg class="w-full h-full text-zinc-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a5 5 0 100 10 5 5 0 000-10zm0 12c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/></svg>`,
+      Feminino: `<svg class="w-full h-full text-zinc-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a4 4 0 100 8 4 4 0 000-8zm0 10c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm6-7h2v2h-2v2h-2V7h-2V5h2V3h2v2z"/></svg>`,
+      Outro: `<svg class="w-full h-full text-zinc-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`
+    };
 
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
       atualizarBadgeTotalNaoLidas();
+      montarOpcoesSexualidadeModal();
+      atualizarTextoBotaoOrientacao();
+      montarChavesPapeis();
     });
+
+    function montarChavesPapeis() {
+      ['cad', 'edit'].forEach(prefixo => {
+        const container = document.getElementById(`${prefixo}-papel-container`);
+        if (!container) return;
+        container.innerHTML = '';
+        listapapeis.forEach(papel => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.id = `${prefixo}-papel-${papel.toLowerCase().replace(/[^a-z]/g, '')}`;
+          const isAtivo = (papel === papelSelecionadoTemp);
+          btn.className = `py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between ${
+            isAtivo ? 'bg-[#39FF14]/20 border-[#39FF14] text-[#39FF14]' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+          }`;
+          btn.innerHTML = `<span>${papel}</span><span class="w-2.5 h-2.5 rounded-full ${isAtivo ? 'bg-[#39FF14] shadow-[0_0_8px_#39FF14]' : 'bg-zinc-700'}"></span>`;
+          btn.onclick = () => selecionarPapel(papel);
+          container.appendChild(btn);
+        });
+      });
+    }
+
+    function selecionarPapel(papel) {
+      papelSelecionadoTemp = papel;
+      montarChavesPapeis();
+    }
+
+    function montarOpcoesSexualidadeModal() {
+      const container = document.getElementById('lista-opcoes-sexualidade');
+      container.innerHTML = '';
+      listaSexualidades.forEach(sex => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = "w-full text-left px-3 py-2.5 rounded-xl bg-zinc-900 hover:bg-[#39FF14] hover:text-black transition text-xs font-medium cursor-pointer";
+        btn.innerText = sex;
+        btn.onclick = () => selecionarSexualidade(sex);
+        container.appendChild(btn);
+      });
+    }
+
+    function abrirModalSexualidades() {
+      document.getElementById('modal-sexualidades').classList.remove('hidden');
+    }
+
+    function fecharModalSexualidades() {
+      document.getElementById('modal-sexualidades').classList.add('hidden');
+    }
+
+    function selecionarSexualidade(sexo) {
+      orientacaoSelecionadaTemp = sexo;
+      atualizarTextoBotaoOrientacao();
+      fecharModalSexualidades();
+    }
+
+    function atualizarTextoBotaoOrientacao() {
+      document.getElementById('cad-sex-text').innerText = orientacaoSelecionadaTemp;
+      document.getElementById('edit-sex-text').innerText = orientacaoSelecionadaTemp;
+    }
 
     function alternarAba(aba) {
       document.getElementById('box-cadastro').classList.toggle('hidden', aba !== 'cadastro');
@@ -397,19 +588,57 @@
       if (file) {
         compressImagePerfil(file, (base64) => {
           fotoPerfilCadastradaBase64 = base64;
-          document.getElementById('cad-foto-preview').src = fotoPerfilCadastradaBase64;
+          const prev = document.getElementById('cad-foto-preview');
+          const placeholder = document.getElementById('cad-placeholder-icon');
+          prev.src = base64;
+          prev.classList.remove('hidden');
+          placeholder.classList.add('hidden');
         });
       }
     });
+
+    document.getElementById('edit-foto-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        compressImagePerfil(file, (base64) => {
+          meuPerfil.foto = base64;
+          const prev = document.getElementById('edit-foto-preview');
+          const placeholder = document.getElementById('edit-placeholder-icon');
+          prev.src = base64;
+          prev.classList.remove('hidden');
+          placeholder.classList.add('hidden');
+        });
+      }
+    });
+
+    function atualizarHeaderPerfil() {
+      const imgHeader = document.getElementById('img-perfil-header');
+      const iconHeader = document.getElementById('icon-perfil-header');
+      const btnPerfilHeader = document.getElementById('btn-perfil-header');
+      const btnLogout = document.getElementById('btn-logout');
+
+      if (meuPerfil) {
+        btnPerfilHeader.classList.remove('hidden');
+        btnLogout.classList.remove('hidden');
+
+        if (meuPerfil.foto && meuPerfil.foto.startsWith('data:image')) {
+          imgHeader.src = meuPerfil.foto;
+          imgHeader.classList.remove('hidden');
+          iconHeader.classList.add('hidden');
+        } else {
+          imgHeader.classList.add('hidden');
+          iconHeader.classList.remove('hidden');
+          iconHeader.innerHTML = svgsSilhuetas[meuPerfil.sexo] || svgsSilhuetas['Outro'];
+        }
+      }
+    }
 
     function iniciarSessao(dadosUsuario) {
       meuPerfil = dadosUsuario;
       localStorage.setItem('colae_usuario', JSON.stringify(meuPerfil));
 
       document.getElementById('login-modal').classList.add('hidden');
-      document.getElementById('img-perfil-header').src = meuPerfil.foto;
-      document.getElementById('minha-foto-header').classList.remove('hidden');
-      document.getElementById('btn-logout').classList.remove('hidden');
+      atualizarHeaderPerfil();
 
       socket.emit('registrar-usuario', meuPerfil);
     }
@@ -432,6 +661,7 @@
       const idade = document.getElementById('cad-idade').value;
       let nick = document.getElementById('cad-nick').value.trim().toLowerCase();
       const senha = document.getElementById('cad-senha').value;
+      const sexo = document.getElementById('cad-sexo').value;
 
       if (!nome || !email || !idade || !nick || !senha) {
         alert("Preencha todos os campos obrigatórios para se cadastrar!");
@@ -444,13 +674,15 @@
         nome,
         email,
         idade,
-        sexo: document.getElementById('cad-sexo').value,
+        sexo,
+        orientacao: orientacaoSelecionadaTemp,
+        papel: papelSelecionadoTemp,
         nick,
         senha,
         bio: document.getElementById('cad-bio').value.trim(),
         altura: document.getElementById('cad-altura').value,
         procura: document.getElementById('cad-procura').value,
-        foto: fotoPerfilCadastradaBase64 || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80"
+        foto: fotoPerfilCadastradaBase64 || ""
       };
 
       socket.emit('solicitar-cadastro', dadosCadastro);
@@ -535,6 +767,58 @@
       location.reload();
     }
 
+    function abrirConfigPerfil() {
+      if (!meuPerfil) return;
+      document.getElementById('edit-nome').value = meuPerfil.nome || '';
+      document.getElementById('edit-idade').value = meuPerfil.idade || 18;
+      document.getElementById('edit-sexo').value = meuPerfil.sexo || 'Outro';
+      orientacaoSelecionadaTemp = meuPerfil.orientacao || 'Heterossexual';
+      papelSelecionadoTemp = meuPerfil.papel || 'Versátil';
+      atualizarTextoBotaoOrientacao();
+      montarChavesPapeis();
+
+      document.getElementById('edit-bio').value = meuPerfil.bio || '';
+      document.getElementById('edit-altura').value = meuPerfil.altura || '';
+      document.getElementById('edit-procura').value = meuPerfil.procura || 'Trocar uma ideia';
+
+      const prev = document.getElementById('edit-foto-preview');
+      const placeholder = document.getElementById('edit-placeholder-icon');
+
+      if (meuPerfil.foto && meuPerfil.foto.startsWith('data:image')) {
+        prev.src = meuPerfil.foto;
+        prev.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+      } else {
+        prev.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+        placeholder.innerHTML = svgsSilhuetas[meuPerfil.sexo] || svgsSilhuetas['Outro'];
+      }
+
+      document.getElementById('config-perfil-modal').classList.remove('hidden');
+    }
+
+    function fecharConfigPerfil() {
+      document.getElementById('config-perfil-modal').classList.add('hidden');
+    }
+
+    function salvarConfigPerfil() {
+      if (!meuPerfil) return;
+      meuPerfil.nome = document.getElementById('edit-nome').value.trim() || meuPerfil.nome;
+      meuPerfil.idade = document.getElementById('edit-idade').value;
+      meuPerfil.sexo = document.getElementById('edit-sexo').value;
+      meuPerfil.orientacao = orientacaoSelecionadaTemp;
+      meuPerfil.papel = papelSelecionadoTemp;
+      meuPerfil.bio = document.getElementById('edit-bio').value.trim();
+      meuPerfil.altura = document.getElementById('edit-altura').value;
+      meuPerfil.procura = document.getElementById('edit-procura').value;
+
+      localStorage.setItem('colae_usuario', JSON.stringify(meuPerfil));
+      atualizarHeaderPerfil();
+      socket.emit('registrar-usuario', meuPerfil);
+      fecharConfigPerfil();
+      alert("Perfil atualizado com sucesso!");
+    }
+
     let tempoInatividade;
     function resetarInatividade() {
       clearTimeout(tempoInatividade);
@@ -597,9 +881,13 @@
         if (user.status === 'online') statusCor = 'bg-[#39FF14]';
         else if (user.status === 'away') statusCor = 'bg-yellow-400';
 
+        const avatarConteudo = user.foto && user.foto.startsWith('data:image') 
+          ? `<img src="${user.foto}" class="w-full h-full object-cover">`
+          : `<div class="w-full h-full flex items-center justify-center bg-zinc-900 p-4">${svgsSilhuetas[user.sexo] || svgsSilhuetas['Outro']}</div>`;
+
         card.innerHTML = `
           <div class="aspect-square w-full overflow-hidden relative">
-            <img src="${user.foto}" class="w-full h-full object-cover">
+            ${avatarConteudo}
             <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
           </div>
           <div class="absolute top-2 right-2">
@@ -626,13 +914,27 @@
     const modalPerfil = document.getElementById('profile-modal');
     function abrirModalPerfil(user) {
       usuarioSelecionadoPerfil = user;
-      document.getElementById('prof-modal-foto').src = user.foto;
       document.getElementById('prof-modal-nome-idade').innerText = `${user.nome}, ${user.idade}`;
       document.getElementById('prof-modal-nick').innerText = user.nick;
+      document.getElementById('prof-modal-orientacao').innerText = user.orientacao || "Orientação não informada";
+      document.getElementById('prof-modal-papel').innerText = user.papel || "Versátil";
       document.getElementById('prof-modal-bio').innerText = user.bio || "Sem bio informada.";
       document.getElementById('prof-modal-altura').innerText = user.altura ? `${user.altura} cm` : "-- cm";
       document.getElementById('prof-modal-procura').innerText = user.procura || "Trocar uma ideia";
       document.getElementById('prof-modal-distancia').innerText = `a ${user.distKm} km de você`;
+
+      const imgModal = document.getElementById('prof-modal-foto');
+      const svgModal = document.getElementById('prof-modal-svg');
+
+      if (user.foto && user.foto.startsWith('data:image')) {
+        imgModal.src = user.foto;
+        imgModal.classList.remove('hidden');
+        svgModal.classList.add('hidden');
+      } else {
+        imgModal.classList.add('hidden');
+        svgModal.classList.remove('hidden');
+        svgModal.innerHTML = svgsSilhuetas[user.sexo] || svgsSilhuetas['Outro'];
+      }
 
       const badgeStatus = document.getElementById('prof-modal-status-badge');
       if (user.status === 'online') {
@@ -697,10 +999,15 @@
       chats.forEach(chat => {
         const item = document.createElement('div');
         item.className = "flex items-center justify-between p-3 bg-zinc-950 border border-zinc-900 rounded-xl cursor-pointer hover:border-[#39FF14] transition group";
+        
+        const avatarHtmlInbox = chat.foto && chat.foto.startsWith('data:image')
+          ? `<img src="${chat.foto}" class="w-full h-full object-cover">`
+          : `<div class="w-full h-full flex items-center justify-center bg-zinc-900 p-2">${svgsSilhuetas[chat.sexo] || svgsSilhuetas['Outro']}</div>`;
+
         item.innerHTML = `
-          <div class="flex items-center space-x-3 flex-1 overflow-hidden" onclick="abrirChat({nick: '${chat.nick}', nome: '${chat.nome}', foto: '${chat.foto}', socketId: '${chat.socketId || ''}'}, 'Perto de você')">
-            <div class="relative w-12 h-12 rounded-full overflow-hidden border border-zinc-800 flex-shrink-0">
-              <img src="${chat.foto}" class="w-full h-full object-cover">
+          <div class="flex items-center space-x-3 flex-1 overflow-hidden" onclick="abrirChat({nick: '${chat.nick}', nome: '${chat.nome}', foto: '${chat.foto || ''}', socketId: '${chat.socketId || ''}', sexo: '${chat.sexo || 'Outro'}'}, 'Perto de você')">
+            <div class="relative w-12 h-12 rounded-full overflow-hidden border border-zinc-800 flex-shrink-0 flex items-center justify-center">
+              ${avatarHtmlInbox}
             </div>
             <div class="overflow-hidden flex-1">
               <h4 class="font-bold text-sm text-white truncate">${chat.nome}</h4>
@@ -831,14 +1138,13 @@
       messagesBox.scrollTop = messagesBox.scrollHeight;
     }
 
-    // SALVA NO HISTÓRICO APENAS SE NÃO FOR DUPLICADA EXATA DA ÚLTIMA MENSAGEM
     function salvarMensagemNoHistorico(destNick, deNick, texto, tipo = 'texto') {
       const keyConversa = getChatKey(meuPerfil.nick, destNick);
       if (!historicoMensagens[keyConversa]) historicoMensagens[keyConversa] = [];
       
       const ultima = historicoMensagens[keyConversa][historicoMensagens[keyConversa].length - 1];
       if (ultima && ultima.texto === texto && ultima.deNick.toLowerCase() === deNick.toLowerCase()) {
-        return; // Evita salvar duplicada consecutiva
+        return; 
       }
 
       historicoMensagens[keyConversa].push({ deNick, texto, tipo });
@@ -858,7 +1164,8 @@
         socketId: usuarioAtivoChat.socketId,
         nick: destNick,
         nome: usuarioAtivoChat.nome,
-        foto: usuarioAtivoChat.foto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
+        foto: usuarioAtivoChat.foto || "",
+        sexo: usuarioAtivoChat.sexo || "Outro",
         ultimaMsg: texto,
         hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         naoLidas: 0
@@ -914,7 +1221,8 @@
             socketId: usuarioAtivoChat.socketId,
             nick: destNick,
             nome: usuarioAtivoChat.nome,
-            foto: usuarioAtivoChat.foto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
+            foto: usuarioAtivoChat.foto || "",
+            sexo: usuarioAtivoChat.sexo || "Outro",
             ultimaMsg: '[Foto]',
             hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             naoLidas: 0
@@ -940,13 +1248,12 @@
       const senderNick = (data.deNick || '').toLowerCase();
       const chatAberto = usuarioAtivoChat && ((usuarioAtivoChat.nick || '').toLowerCase() === senderNick) && !modalChat.classList.contains('hidden');
 
-      // Verifica no histórico se a última mensagem recebida é exatamente idêntica para evitar duplicidade
       const keyConversa = getChatKey(meuPerfil.nick, senderNick);
       const ultimas = historicoMensagens[keyConversa] || [];
       const ultimaMsg = ultimas[ultimas.length - 1];
 
       if (ultimaMsg && ultimaMsg.texto === data.texto && ultimaMsg.deNick.toLowerCase() === senderNick) {
-        return; // Ignora se for duplicada enviada em broadcast duplo
+        return; 
       }
 
       salvarMensagemNoHistorico(senderNick, data.deNick, data.texto, data.tipo || 'texto');
@@ -957,7 +1264,8 @@
         socketId: data.deId,
         nick: senderNick,
         nome: data.deNome,
-        foto: data.deFoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
+        foto: data.deFoto || "",
+        sexo: data.deSexo || "Outro",
         ultimaMsg: data.tipo === 'imagem' ? '[Foto]' : data.texto,
         hora: data.timestamp,
         naoLidas: chatAberto ? 0 : (qtdAnterior + 1)
@@ -974,13 +1282,25 @@
         adicionarMensagemTela(data.texto, false, data.tipo === 'imagem');
       } else {
         tocarSomNotificacao();
-        exibirToastNotificacao(data.deNome, data.deFoto, data.tipo === 'imagem' ? 'Enviou uma foto' : data.texto);
+        exibirToastNotificacao(data.deNome, data.deFoto, data.deSexo, data.tipo === 'imagem' ? 'Enviou uma foto' : data.texto);
       }
     });
 
-    function exibirToastNotificacao(nome, foto, msg) {
+    function exibirToastNotificacao(nome, foto, sexo, msg) {
       const toast = document.getElementById('toast-notificacao');
-      document.getElementById('toast-foto').src = foto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80";
+      const imgToast = document.getElementById('toast-foto');
+      const svgToast = document.getElementById('toast-svg-placeholder');
+
+      if (foto && foto.startsWith('data:image')) {
+        imgToast.src = foto;
+        imgToast.classList.remove('hidden');
+        svgToast.classList.add('hidden');
+      } else {
+        imgToast.classList.add('hidden');
+        svgToast.classList.remove('hidden');
+        svgToast.innerHTML = svgsSilhuetas[sexo] || svgsSilhuetas['Outro'];
+      }
+
       document.getElementById('toast-nome').innerText = nome;
       document.getElementById('toast-msg').innerText = msg;
       
