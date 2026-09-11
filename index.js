@@ -4,9 +4,7 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: "*" }
-});
+const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static('public'));
 
@@ -27,7 +25,7 @@ io.on('connection', (socket) => {
       altura: dados.altura || "",
       procura: dados.procura || "Trocar uma ideia",
       status: 'online',
-      distKm: (Math.random() * 4.5 + 0.1).toFixed(2)
+      distKm: dados.distKm || (Math.random() * 4.5 + 0.1).toFixed(2)
     };
 
     io.emit('lista-usuarios-reais', Object.values(usuariosConectados));
@@ -42,7 +40,6 @@ io.on('connection', (socket) => {
 
   socket.on('send-private-message', (data) => {
     const remetente = usuariosConectados[socket.id];
-    
     const destinatario = Object.values(usuariosConectados).find(
       u => u.nick === data.paraNick || u.socketId === data.paraId
     );
@@ -50,7 +47,7 @@ io.on('connection', (socket) => {
     if (destinatario) {
       io.to(destinatario.socketId).emit('receive-private-message', {
         deId: socket.id,
-        deNick: remetente ? remetente.nick : '',
+        deNick: remetente ? remetente.nick : data.deNick,
         deNome: remetente ? remetente.nome : 'Usuário',
         deFoto: remetente ? remetente.foto : '',
         texto: data.texto,
@@ -67,4 +64,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Servidor Colaê ativo na porta ${PORT}`));
+server.listen(PORT, () => console.log(`Servidor Colaê rodando na porta ${PORT}`));
