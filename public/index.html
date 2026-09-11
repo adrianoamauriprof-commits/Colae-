@@ -43,19 +43,17 @@
         <h3 class="text-sm font-bold text-[#39FF14]">Selecione a Orientação Sexual</h3>
         <button type="button" onclick="fecharModalSexualidades()" class="text-zinc-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
-      <div id="lista-opcoes-sexualidade" class="space-y-1.5 max-h-60 overflow-y-auto">
-        <!-- Preenchido via script -->
-      </div>
+      <div id="lista-opcoes-sexualidade" class="space-y-1.5 max-h-60 overflow-y-auto"></div>
     </div>
   </div>
 
   <!-- MODAL DE AUTENTICAÇÃO -->
-  <div id="login-modal" class="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center p-6 overflow-y-auto">
-    <div class="w-full max-w-sm flex flex-col items-center space-y-5 my-auto">
+  <div id="login-modal" class="fixed inset-0 z-50 bg-black flex flex-col justify-between items-center p-6 overflow-y-auto">
+    <div class="w-full max-w-sm flex flex-col items-center space-y-4 my-auto">
       <div class="text-center space-y-2">
         <i data-lucide="zap" class="text-[#39FF14] w-12 h-12 mx-auto fill-[#39FF14] animate-bounce"></i>
         <h1 class="text-5xl font-black tracking-wider neon-text lowercase">colaê</h1>
-        <p class="text-xs text-zinc-400">Entre com seu nickname ou crie seu perfil para colar com a galera real.</p>
+        <p class="text-xs text-zinc-400">Entre com seu nickname ou crie sua conta para colar com a galera real.</p>
       </div>
 
       <div id="abas-auth" class="flex w-full bg-zinc-900 rounded-xl p-1 border border-zinc-800 text-xs font-bold">
@@ -63,22 +61,8 @@
         <button id="tab-btn-login" type="button" onclick="alternarAba('login')" class="flex-1 py-2.5 rounded-lg text-zinc-400 hover:text-white transition font-bold cursor-pointer">Já tenho conta</button>
       </div>
 
-      <!-- FORMULÁRIO CADASTRO -->
+      <!-- FORMULÁRIO CADASTRO (LIMPO) -->
       <div id="box-cadastro" class="w-full space-y-3">
-        <div class="flex flex-col items-center space-y-2">
-          <div class="relative w-20 h-20 rounded-full bg-zinc-900 border-2 border-[#39FF14] overflow-hidden flex items-center justify-center group cursor-pointer" onclick="document.getElementById('cad-foto-input').click()">
-            <img id="cad-foto-preview" src="" class="w-full h-full object-cover hidden">
-            <div id="cad-placeholder-icon" class="text-zinc-500 flex flex-col items-center justify-center w-full h-full">
-              <i data-lucide="user" class="w-8 h-8"></i>
-            </div>
-            <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition">
-              <i data-lucide="camera" class="w-6 h-6 text-white"></i>
-            </div>
-          </div>
-          <button type="button" onclick="document.getElementById('cad-foto-input').click()" class="text-xs text-[#39FF14] font-medium hover:underline cursor-pointer">Adicionar Foto de Perfil</button>
-          <input type="file" id="cad-foto-input" accept="image/*" class="hidden">
-        </div>
-
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Nome de Exibição</label>
           <input type="text" id="cad-nome" placeholder="Ex: Rodrigo Silva" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
@@ -87,38 +71,6 @@
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">E-mail (para recuperação)</label>
           <input type="email" id="cad-email" placeholder="seuemail@exemplo.com" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
-        </div>
-        
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="text-xs text-zinc-400 font-medium block mb-1">Idade</label>
-            <input type="number" id="cad-idade" min="18" max="99" placeholder="Ex: 25" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
-          </div>
-          <div>
-            <label class="text-xs text-zinc-400 font-medium block mb-1">Sexo</label>
-            <select id="cad-sexo" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
-              <option value="Masculino">Masculino</option>
-              <option value="Feminino">Feminino</option>
-              <option value="Outro">Outro</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- ORIENTAÇÃO SEXUAL -->
-        <div>
-          <label class="text-xs text-zinc-400 font-medium block mb-1">Orientação Sexual</label>
-          <button type="button" onclick="abrirModalSexualidades('cad')" id="cad-btn-sexualidade" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm text-left flex justify-between items-center cursor-pointer hover:border-[#39FF14]">
-            <span id="cad-sex-text">Selecione...</span>
-            <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-400"></i>
-          </button>
-        </div>
-
-        <!-- PAPEL / PREFERÊNCIA (CHAVES SELECIONÁVEIS) -->
-        <div>
-          <label class="text-xs text-zinc-400 font-medium block mb-1">Papel / Preferência</label>
-          <div id="cad-papel-container" class="grid grid-cols-2 gap-2">
-            <!-- Gerado via script -->
-          </div>
         </div>
 
         <div>
@@ -131,30 +83,7 @@
           <input type="password" id="cad-senha" placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
 
-        <div class="pt-2 border-t border-zinc-900 space-y-2">
-          <p class="text-[11px] text-[#39FF14] font-bold uppercase tracking-wider">Perfil Expansível (Opcional)</p>
-          <div>
-            <label class="text-xs text-zinc-400 font-medium block mb-1">Bio / Sobre mim</label>
-            <textarea id="cad-bio" placeholder="Conta um pouco sobre você..." class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#39FF14] transition resize-none h-16"></textarea>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="text-xs text-zinc-400 font-medium block mb-1">Altura (cm)</label>
-              <input type="number" id="cad-altura" placeholder="Ex: 178" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#39FF14] transition">
-            </div>
-            <div>
-              <label class="text-xs text-zinc-400 font-medium block mb-1">Procura no App</label>
-              <select id="cad-procura" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-2 py-2 text-sm focus:outline-none focus:border-[#39FF14] transition">
-                <option value="Trocar uma ideia">Trocar uma ideia</option>
-                <option value="Rolê casual">Rolê casual</option>
-                <option value="Amizade">Amizade</option>
-                <option value="Relacionamento">Relacionamento</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <button type="button" onclick="enviarCadastro()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4 cursor-pointer">
+        <button type="button" onclick="enviarCadastro()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-2 cursor-pointer">
           <span>Cadastrar no Colaê</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
@@ -173,7 +102,7 @@
         <div class="text-right">
           <button type="button" onclick="alternarAba('recuperar')" class="text-xs text-[#39FF14] hover:underline font-medium cursor-pointer">Esqueceu a senha?</button>
         </div>
-        <button type="button" onclick="enviarLogin()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4 cursor-pointer">
+        <button type="button" onclick="enviarLogin()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-2 cursor-pointer">
           <span>Entrar na Conta</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
@@ -206,6 +135,11 @@
           <button type="button" onclick="alternarAba('login')" class="text-xs text-zinc-400 hover:text-white cursor-pointer">Voltar ao Login</button>
         </div>
       </div>
+    </div>
+
+    <!-- COPYRIGHT NO RODAPÉ DO MODAL -->
+    <div class="w-full text-center text-[10px] text-zinc-500 pt-4 pb-2">
+      &copy; 2026 Colaê. Todos os direitos reservados.
     </div>
   </div>
 
@@ -292,8 +226,8 @@
           <h2 id="prof-modal-nome-idade" class="text-xl font-bold text-white">---</h2>
           <p id="prof-modal-nick" class="text-xs text-zinc-400">@---</p>
           <div class="flex flex-wrap gap-1.5 mt-1">
-            <span id="prof-modal-orientacao" class="text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md text-[#39FF14] font-medium">---</span>
-            <span id="prof-modal-papel" class="text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md text-zinc-300 font-medium">---</span>
+            <span id="prof-modal-orientacao" class="text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md text-[#39FF14] font-medium hidden">---</span>
+            <span id="prof-modal-papel" class="text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-md text-zinc-300 font-medium hidden">---</span>
           </div>
           <div class="flex items-center gap-2 mt-1">
             <span id="prof-modal-status-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold">
@@ -371,7 +305,7 @@
 
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Orientação Sexual</label>
-          <button type="button" onclick="abrirModalSexualidades('edit')" id="edit-btn-sexualidade" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm text-left flex justify-between items-center cursor-pointer hover:border-[#39FF14]">
+          <button type="button" onclick="abrirModalSexualidades()" id="edit-btn-sexualidade" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm text-left flex justify-between items-center cursor-pointer hover:border-[#39FF14]">
             <span id="edit-sex-text">Selecione...</span>
             <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-400"></i>
           </button>
@@ -379,9 +313,7 @@
 
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Papel / Preferência</label>
-          <div id="edit-papel-container" class="grid grid-cols-2 gap-2">
-            <!-- Gerado via script -->
-          </div>
+          <div id="edit-papel-container" class="grid grid-cols-2 gap-2"></div>
         </div>
 
         <div>
@@ -451,7 +383,6 @@
     let usuarioAtivoChat = null;
     let usuarioSelecionadoPerfil = null;
     let filtroSomenteOnline = false;
-    let fotoPerfilCadastradaBase64 = "";
     let emailRecuperacaoGlobal = "";
     let orientacaoSelecionadaTemp = "Heterossexual";
     let papelSelecionadoTemp = "Versátil";
@@ -489,22 +420,19 @@
     });
 
     function montarChavesPapeis() {
-      ['cad', 'edit'].forEach(prefixo => {
-        const container = document.getElementById(`${prefixo}-papel-container`);
-        if (!container) return;
-        container.innerHTML = '';
-        listapapeis.forEach(papel => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.id = `${prefixo}-papel-${papel.toLowerCase().replace(/[^a-z]/g, '')}`;
-          const isAtivo = (papel === papelSelecionadoTemp);
-          btn.className = `py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between ${
-            isAtivo ? 'bg-[#39FF14]/20 border-[#39FF14] text-[#39FF14]' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
-          }`;
-          btn.innerHTML = `<span>${papel}</span><span class="w-2.5 h-2.5 rounded-full ${isAtivo ? 'bg-[#39FF14] shadow-[0_0_8px_#39FF14]' : 'bg-zinc-700'}"></span>`;
-          btn.onclick = () => selecionarPapel(papel);
-          container.appendChild(btn);
-        });
+      const container = document.getElementById(`edit-papel-container`);
+      if (!container) return;
+      container.innerHTML = '';
+      listapapeis.forEach(papel => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isAtivo = (papel === papelSelecionadoTemp);
+        btn.className = `py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between ${
+          isAtivo ? 'bg-[#39FF14]/20 border-[#39FF14] text-[#39FF14]' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+        }`;
+        btn.innerHTML = `<span>${papel}</span><span class="w-2.5 h-2.5 rounded-full ${isAtivo ? 'bg-[#39FF14] shadow-[0_0_8px_#39FF14]' : 'bg-zinc-700'}"></span>`;
+        btn.onclick = () => selecionarPapel(papel);
+        container.appendChild(btn);
       });
     }
 
@@ -541,7 +469,6 @@
     }
 
     function atualizarTextoBotaoOrientacao() {
-      document.getElementById('cad-sex-text').innerText = orientacaoSelecionadaTemp;
       document.getElementById('edit-sex-text').innerText = orientacaoSelecionadaTemp;
     }
 
@@ -582,20 +509,6 @@
         };
       };
     }
-
-    document.getElementById('cad-foto-input').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
-        compressImagePerfil(file, (base64) => {
-          fotoPerfilCadastradaBase64 = base64;
-          const prev = document.getElementById('cad-foto-preview');
-          const placeholder = document.getElementById('cad-placeholder-icon');
-          prev.src = base64;
-          prev.classList.remove('hidden');
-          placeholder.classList.add('hidden');
-        });
-      }
-    });
 
     document.getElementById('edit-foto-input').addEventListener('change', function(e) {
       const file = e.target.files[0];
@@ -658,13 +571,11 @@
     function enviarCadastro() {
       const nome = document.getElementById('cad-nome').value.trim();
       const email = document.getElementById('cad-email').value.trim();
-      const idade = document.getElementById('cad-idade').value;
       let nick = document.getElementById('cad-nick').value.trim().toLowerCase();
       const senha = document.getElementById('cad-senha').value;
-      const sexo = document.getElementById('cad-sexo').value;
 
-      if (!nome || !email || !idade || !nick || !senha) {
-        alert("Preencha todos os campos obrigatórios para se cadastrar!");
+      if (!nome || !email || !nick || !senha) {
+        alert("Preencha todos os campos obrigatórios (Nome, E-mail, Nickname e Senha)!");
         return;
       }
 
@@ -673,16 +584,16 @@
       const dadosCadastro = {
         nome,
         email,
-        idade,
-        sexo,
-        orientacao: orientacaoSelecionadaTemp,
-        papel: papelSelecionadoTemp,
+        idade: 18,
+        sexo: 'Outro',
+        orientacao: 'Heterossexual',
+        papel: 'Versátil',
         nick,
         senha,
-        bio: document.getElementById('cad-bio').value.trim(),
-        altura: document.getElementById('cad-altura').value,
-        procura: document.getElementById('cad-procura').value,
-        foto: fotoPerfilCadastradaBase64 || ""
+        bio: '',
+        altura: '',
+        procura: 'Trocar uma ideia',
+        foto: ''
       };
 
       socket.emit('solicitar-cadastro', dadosCadastro);
@@ -916,8 +827,24 @@
       usuarioSelecionadoPerfil = user;
       document.getElementById('prof-modal-nome-idade').innerText = `${user.nome}, ${user.idade}`;
       document.getElementById('prof-modal-nick').innerText = user.nick;
-      document.getElementById('prof-modal-orientacao').innerText = user.orientacao || "Orientação não informada";
-      document.getElementById('prof-modal-papel').innerText = user.papel || "Versátil";
+      
+      const elOri = document.getElementById('prof-modal-orientacao');
+      const elPapel = document.getElementById('prof-modal-papel');
+
+      if (user.orientacao) {
+        elOri.innerText = user.orientacao;
+        elOri.classList.remove('hidden');
+      } else {
+        elOri.classList.add('hidden');
+      }
+
+      if (user.papel) {
+        elPapel.innerText = user.papel;
+        elPapel.classList.remove('hidden');
+      } else {
+        elPapel.classList.add('hidden');
+      }
+
       document.getElementById('prof-modal-bio').innerText = user.bio || "Sem bio informada.";
       document.getElementById('prof-modal-altura').innerText = user.altura ? `${user.altura} cm` : "-- cm";
       document.getElementById('prof-modal-procura').innerText = user.procura || "Trocar uma ideia";
