@@ -144,15 +144,28 @@
     </div>
   </header>
 
-  <!-- FILTRO DE DISTÂNCIA -->
-  <div id="barra-filtro" class="bg-zinc-950 px-4 py-2 text-xs border-b border-zinc-900 space-y-2">
-    <div class="flex justify-between items-center">
-      <span class="text-zinc-400 flex items-center gap-1">
-        <i data-lucide="sliders" class="w-3.5 h-3.5 text-[#39FF14]"></i> Raio de Distância:
-      </span>
-      <span id="label-distancia" class="text-[#39FF14] font-bold">Até 5.0 km</span>
+  <!-- BARRA DE FILTROS: DISTÂNCIA + FILTRO DE STATUS (ONLINE/TODOS) -->
+  <div id="barra-filtro" class="bg-zinc-950 px-4 py-3 text-xs border-b border-zinc-900 space-y-3">
+    <!-- FILTRO APENAS ONLINE OU TODOS -->
+    <div class="flex bg-zinc-900 rounded-xl p-1 border border-zinc-800 font-bold">
+      <button id="filter-btn-todos" type="button" class="flex-1 py-1.5 rounded-lg bg-[#39FF14] text-black transition flex justify-center items-center gap-1">
+        <i data-lucide="users" class="w-3.5 h-3.5"></i> Todos os Usuários
+      </button>
+      <button id="filter-btn-online" type="button" class="flex-1 py-1.5 rounded-lg text-zinc-400 hover:text-white transition flex justify-center items-center gap-1">
+        <span class="w-2 h-2 rounded-full bg-[#39FF14]"></span> Apenas Online
+      </button>
     </div>
-    <input type="range" id="filter-distancia" min="0.5" max="10" step="0.5" value="5" class="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#39FF14]">
+
+    <!-- RAIO DE DISTÂNCIA -->
+    <div class="space-y-1">
+      <div class="flex justify-between items-center">
+        <span class="text-zinc-400 flex items-center gap-1">
+          <i data-lucide="sliders" class="w-3.5 h-3.5 text-[#39FF14]"></i> Raio de Distância:
+        </span>
+        <span id="label-distancia" class="text-[#39FF14] font-bold">Até 5.0 km</span>
+      </div>
+      <input type="range" id="filter-distancia" min="0.5" max="10" step="0.5" value="5" class="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#39FF14]">
+    </div>
   </div>
 
   <!-- CONTEÚDO PRINCIPAL -->
@@ -197,7 +210,7 @@
           <h2 id="prof-modal-nome-idade" class="text-xl font-bold text-white">---</h2>
           <p id="prof-modal-nick" class="text-xs text-zinc-400">@---</p>
           <div class="flex items-center gap-2 mt-1">
-            <span id="prof-modal-status-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#39FF14]/20 text-[#39FF14] border border-[#39FF14]">
+            <span id="prof-modal-status-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold">
               ● Online
             </span>
             <span id="prof-modal-distancia" class="text-xs text-zinc-400">---</span>
@@ -264,8 +277,8 @@
     let meuPerfil = null;
     let usuarioAtivoChat = null;
     let usuarioSelecionadoPerfil = null;
+    let filtroSomenteOnline = false; // Alterna entre Todos e Apenas Online
 
-    // Cache local permanente para evitar sumiço de dados
     let usuariosReaisConectados = JSON.parse(localStorage.getItem('colae_cache_perfis') || '[]');
     let conversasInbox = JSON.parse(localStorage.getItem('colae_inbox') || '{}');
     let historicoMensagens = JSON.parse(localStorage.getItem('colae_historico_msgs') || '{}');
@@ -379,7 +392,7 @@
       location.reload();
     });
 
-    // STATUS ONLINE / AUSENTE
+    // CONTROLE DE STATUS (ONLINE/AUSENTE)
     let tempoInatividade;
     function resetarInatividade() {
       clearTimeout(tempoInatividade);
@@ -395,13 +408,31 @@
       else resetarInatividade();
     });
 
-    // LISTA E EXPLORAR (PERMANENTE VIA CACHE)
+    // FILTRO DE STATUS (TODOS VS APENAS ONLINE)
+    const btnFilterTodos = document.getElementById('filter-btn-todos');
+    const btnFilterOnline = document.getElementById('filter-btn-online');
+
+    btnFilterTodos.addEventListener('click', () => {
+      filtroSomenteOnline = false;
+      btnFilterTodos.className = "flex-1 py-1.5 rounded-lg bg-[#39FF14] text-black transition flex justify-center items-center gap-1 font-bold";
+      btnFilterOnline.className = "flex-1 py-1.5 rounded-lg text-zinc-400 hover:text-white transition flex justify-center items-center gap-1 font-bold";
+      renderizarPerfis();
+    });
+
+    btnFilterOnline.addEventListener('click', () => {
+      filtroSomenteOnline = true;
+      btnFilterOnline.className = "flex-1 py-1.5 rounded-lg bg-[#39FF14] text-black transition flex justify-center items-center gap-1 font-bold";
+      btnFilterTodos.className = "flex-1 py-1.5 rounded-lg text-zinc-400 hover:text-white transition flex justify-center items-center gap-1 font-bold";
+      renderizarPerfis();
+    });
+
+    // GRADE DE PERFIS
     const grid = document.getElementById('grid-perfis');
     const filterInput = document.getElementById('filter-distancia');
     const labelDistancia = document.getElementById('label-distancia');
 
     socket.on('lista-usuarios-reais', (usuarios) => {
-      const novosPerfis = usuarios.filter(u => u.nick !== (meuPerfil ? meuPerfil.nick : ''));
+      const novosPerfis = usuarios.filter(u => u.nick.toLowerCase() !== (meuPerfil ? meuPerfil.nick.toLowerCase() : ''));
       if (novosPerfis.length > 0) {
         usuariosReaisConectados = novosPerfis;
         localStorage.setItem('colae_cache_perfis', JSON.stringify(usuariosReaisConectados));
@@ -414,17 +445,24 @@
       const limiteKm = parseFloat(filterInput.value);
       labelDistancia.innerText = `Até ${limiteKm.toFixed(1)} km`;
 
-      const filtrados = usuariosReaisConectados.filter(u => parseFloat(u.distKm) <= limiteKm);
+      let filtrados = usuariosReaisConectados.filter(u => parseFloat(u.distKm) <= limiteKm);
+
+      if (filtroSomenteOnline) {
+        filtrados = filtrados.filter(u => u.status === 'online' || u.status === 'away');
+      }
 
       if (filtrados.length === 0) {
-        grid.innerHTML = `<p class="col-span-full text-center text-xs text-zinc-500 py-12">Nenhum usuário real conectado no raio selecionado.</p>`;
+        grid.innerHTML = `<p class="col-span-full text-center text-xs text-zinc-500 py-12">Nenhum perfil encontrado com os filtros selecionados.</p>`;
         return;
       }
 
       filtrados.forEach(user => {
         const card = document.createElement('div');
         card.className = "relative group cursor-pointer overflow-hidden rounded-xl bg-zinc-950 border border-zinc-900 shadow-md transition hover:border-[#39FF14]";
-        const statusCor = user.status === 'online' ? 'bg-[#39FF14]' : 'bg-yellow-400';
+        
+        let statusCor = 'bg-zinc-600'; // Offline por padrão (cinza)
+        if (user.status === 'online') statusCor = 'bg-[#39FF14]'; // Online (verde)
+        else if (user.status === 'away') statusCor = 'bg-yellow-400'; // Ausente (amarelo)
 
         card.innerHTML = `
           <div class="aspect-square w-full overflow-hidden relative">
@@ -454,7 +492,7 @@
 
     filterInput.addEventListener('input', renderizarPerfis);
 
-    // MODAL PERFIL DETALHADO
+    // MODAL DE PERFIL EXPANSÍVEL
     const modalPerfil = document.getElementById('profile-modal');
     function abrirModalPerfil(user) {
       usuarioSelecionadoPerfil = user;
@@ -470,9 +508,12 @@
       if (user.status === 'online') {
         badgeStatus.className = "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#39FF14]/20 text-[#39FF14] border border-[#39FF14]";
         badgeStatus.innerText = "● Online";
-      } else {
+      } else if (user.status === 'away') {
         badgeStatus.className = "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-400/20 text-yellow-400 border border-yellow-400";
         badgeStatus.innerText = "● Ausente";
+      } else {
+        badgeStatus.className = "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800 text-zinc-400 border border-zinc-700";
+        badgeStatus.innerText = "● Offline";
       }
 
       modalPerfil.classList.remove('hidden');
@@ -557,7 +598,7 @@
       }
     }
 
-    // GESTÃO DE CHAT E MENSAGENS INDESTRUTÍVEL
+    // CHAT & PERSISTÊNCIA DE MENSAGENS
     const modalChat = document.getElementById('chat-modal');
     const messagesBox = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
