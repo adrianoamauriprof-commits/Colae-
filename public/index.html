@@ -716,7 +716,7 @@
     const chatInput = document.getElementById('chat-input');
 
     function getChatKey(nick1, nick2) {
-      if (!nick1 || !nick2) return nick1 || nick2;
+      if (!nick1 || !nick2) return (nick1 || nick2 || '').toLowerCase();
       return [nick1.toLowerCase(), nick2.toLowerCase()].sort().join('_');
     }
 
@@ -724,7 +724,7 @@
       if (!meuPerfil) return alert('Faça login primeiro!');
       usuarioAtivoChat = targetUser;
       
-      const destNick = targetUser.nick || targetUser.socketId;
+      const destNick = (targetUser.nick || targetUser.socketId || '').toLowerCase();
       const keyConversa = getChatKey(meuPerfil.nick, destNick);
 
       if (conversasInbox[destNick]) {
@@ -739,7 +739,7 @@
       
       const msgsData = historicoMensagens[keyConversa] || [];
       msgsData.forEach(msg => {
-        adicionarMensagemTela(msg.texto, msg.deNick === meuPerfil.nick, msg.tipo === 'imagem');
+        adicionarMensagemTela(msg.texto, msg.deNick.toLowerCase() === meuPerfil.nick.toLowerCase(), msg.tipo === 'imagem');
       });
 
       modalChat.classList.remove('hidden');
@@ -749,6 +749,7 @@
     function fecharChat() {
       modalChat.classList.add('hidden');
       usuarioAtivoChat = null;
+      renderizarInbox();
     }
 
     function adicionarMensagemTela(conteudo, eMinha = true, eImagem = false) {
@@ -788,8 +789,7 @@
 
       adicionarMensagemTela(texto, true, false);
 
-      const destNick = usuarioAtivoChat.nick || usuarioAtivoChat.socketId;
-
+      const destNick = (usuarioAtivoChat.nick || usuarioAtivoChat.socketId || '').toLowerCase();
       salvarMensagemNoHistorico(destNick, meuPerfil.nick, texto, 'texto');
 
       conversasInbox[destNick] = {
@@ -825,7 +825,7 @@
           const imgBase64 = evt.target.result;
           adicionarMensagemTela(imgBase64, true, true);
 
-          const destNick = usuarioAtivoChat.nick || usuarioAtivoChat.socketId;
+          const destNick = (usuarioAtivoChat.nick || usuarioAtivoChat.socketId || '').toLowerCase();
           salvarMensagemNoHistorico(destNick, meuPerfil.nick, imgBase64, 'imagem');
 
           conversasInbox[destNick] = {
@@ -856,8 +856,8 @@
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); });
 
     socket.on('receive-private-message', (data) => {
-      const senderNick = data.deNick || data.deId;
-      const chatAberto = usuarioAtivoChat && (usuarioAtivoChat.nick === data.deNick || usuarioAtivoChat.socketId === data.deId) && !modalChat.classList.contains('hidden');
+      const senderNick = (data.deNick || data.deId || '').toLowerCase();
+      const chatAberto = usuarioAtivoChat && ((usuarioAtivoChat.nick || '').toLowerCase() === senderNick || usuarioAtivoChat.socketId === data.deId) && !modalChat.classList.contains('hidden');
 
       salvarMensagemNoHistorico(senderNick, data.deNick, data.texto, data.tipo);
 
