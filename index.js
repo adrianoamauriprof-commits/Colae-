@@ -13,7 +13,7 @@ const io = new Server(server, {
 app.use(express.static('public'));
 
 let contasCadastradas = {};
-let socketsConectados = {};
+let socketsConectados = {}; // Mapeamento direto: socket.id -> nickKey
 
 io.on('connection', (socket) => {
   console.log('Cliente conectado:', socket.id);
@@ -22,6 +22,23 @@ io.on('connection', (socket) => {
     const { senha, ...perfilPublico } = u;
     return perfilPublico;
   }));
+
+  // REGISTRO DE USUÁRIO / SESSÃO ATIVA
+  socket.on('registrar-usuario', (dados) => {
+    if (!dados || !dados.nick) return;
+    const nickKey = dados.nick.toLowerCase();
+
+    if (contasCadastradas[nickKey]) {
+      contasCadastradas[nickKey].socketId = socket.id;
+      contasCadastradas[nickKey].status = 'online';
+    }
+    socketsConectados[socket.id] = nickKey;
+
+    io.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
+      const { senha, ...p } = u;
+      return p;
+    }));
+  });
 
   // EVENTO DE CADASTRO
   socket.on('solicitar-cadastro', (dados) => {
@@ -132,17 +149,24 @@ io.on('connection', (socket) => {
     }
   });
 
-  // MENSAGEM PRIVADA
+  // MENSAGEM PRIVADA ROBUSTA (BUSCA POR SOCKET ID DIRETO OU NICKNAME)
   socket.on('send-private-message', (data) => {
     const remetenteNickKey = socketsConectados[socket.id];
     const remetente = remetenteNickKey ? contasCadastradas[remetenteNickKey] : null;
+    
     const destNickKey = (data.paraNick || '').toLowerCase();
-    const destinatario = contasCadastradas[destNickKey];
+    let destinatario = contasCadastradas[destNickKey];
+
+    // Fallback: se não achar pelo nick direto, busca pelo socketId caso tenha sido enviado
+    if (!destinatario && data.paraId) {
+      const nickEncontrado = socketsConectados[data.paraId];
+      if (nickEncontrado) destinatario = contasCadastradas[nickEncontrado];
+    }
 
     if (destinatario && destinatario.socketId) {
       io.to(destinatario.socketId).emit('receive-private-message', {
         deId: socket.id,
-        deNick: remetente ? remetente.nick : data.deNick,
+        deNick: remetente ? remetente.nick : (data.deNick || '@usuario'),
         deNome: remetente ? remetente.nome : 'Usuário',
         deFoto: remetente ? remetente.foto : '',
         texto: data.texto,
