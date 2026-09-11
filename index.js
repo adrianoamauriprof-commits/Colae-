@@ -7,7 +7,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, { 
   cors: { origin: "*" },
-  maxHttpBufferSize: 1e7
+  maxHttpBufferSize: 2e7 // Aumentado para 20MB para garantir folga com imagens
 });
 
 app.use(express.static('public'));
@@ -16,7 +16,7 @@ let contasCadastradas = {};
 let socketsConectados = {}; 
 
 io.on('connection', (socket) => {
-  console.log('>>> Novo cliente conectado:', socket.id);
+  console.log('Cliente conectado:', socket.id);
 
   socket.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
     const { senha, ...perfilPublico } = u;
@@ -54,7 +54,6 @@ io.on('connection', (socket) => {
     }
 
     socketsConectados[socket.id] = nickKey;
-    console.log(`[REGISTRO] Usuário ${nickKey} associado ao socket ${socket.id}`);
 
     io.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
       const { senha, ...p } = u;
@@ -168,10 +167,8 @@ io.on('connection', (socket) => {
     }
   });
 
-  // MENSAGEM PRIVADA COM LOGS DE DEPURAÇÃO
+  // ROTEAMENTO UNIVERSAL DIRETO PARA TEXTO E FOTOS
   socket.on('send-private-message', (data) => {
-    console.log('[MSG RECEBIDA NO SERVER]', data);
-
     const remetenteNickKey = socketsConectados[socket.id];
     let remetente = remetenteNickKey ? contasCadastradas[remetenteNickKey] : null;
 
@@ -196,7 +193,6 @@ io.on('connection', (socket) => {
     }
 
     if (destinatario && destinatario.socketId) {
-      console.log(`[ENVIANDO DE] ${remetente ? remetente.nick : 'Desconhecido'} [PARA] ${destinatario.nick} (Socket: ${destinatario.socketId})`);
       io.to(destinatario.socketId).emit('receive-private-message', {
         deId: socket.id,
         deNick: remetente ? remetente.nick : (data.deNick || '@usuario'),
@@ -206,8 +202,6 @@ io.on('connection', (socket) => {
         tipo: data.tipo || 'texto',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
-    } else {
-      console.log('[ERRO] Destinatário não encontrado ou sem socketId ativo:', data);
     }
   });
 
