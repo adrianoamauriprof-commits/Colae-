@@ -34,8 +34,8 @@
       </div>
 
       <div class="flex w-full bg-zinc-900 rounded-xl p-1 border border-zinc-800 text-xs font-bold">
-        <button id="tab-btn-cadastro" type="button" class="flex-1 py-2 rounded-lg bg-[#39FF14] text-black transition">Criar Conta</button>
-        <button id="tab-btn-login" type="button" class="flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition">Já tenho conta</button>
+        <button id="tab-btn-cadastro" type="button" class="flex-1 py-2 rounded-lg bg-[#39FF14] text-black transition font-bold">Criar Conta</button>
+        <button id="tab-btn-login" type="button" class="flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition font-bold">Já tenho conta</button>
       </div>
 
       <!-- FORMULÁRIO CADASTRO -->
@@ -145,14 +145,12 @@
     <input type="range" id="filter-distancia" min="0.5" max="10" step="0.5" value="5" class="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#39FF14]">
   </div>
 
-  <!-- CONTEÚDO PRINCIPAL (EXPLORAR OU INBOX) -->
+  <!-- CONTEÚDO PRINCIPAL -->
   <main class="flex-1 p-2 sm:p-4 mb-14">
-    <!-- ABA EXPLORAR (PERFIS) -->
     <div id="aba-explorar">
       <div id="grid-perfis" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5"></div>
     </div>
 
-    <!-- ABA INBOX (CONVERSAS) -->
     <div id="aba-inbox" class="hidden">
       <h2 class="text-base font-bold text-white mb-3 flex items-center gap-2">
         <i data-lucide="message-square" class="text-[#39FF14] w-5 h-5"></i> Suas Conversas
@@ -161,7 +159,7 @@
     </div>
   </main>
 
-  <!-- NAVEGAÇÃO INFERIOR (BOTTOM BAR) -->
+  <!-- NAVEGAÇÃO INFERIOR -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950 border-t border-zinc-900 flex justify-around py-2.5">
     <button id="nav-btn-explorar" class="flex flex-col items-center text-[#39FF14]">
       <i data-lucide="flame" class="w-5 h-5"></i>
@@ -170,11 +168,10 @@
     <button id="nav-btn-inbox" class="flex flex-col items-center text-zinc-500 hover:text-white relative">
       <i data-lucide="message-square" class="w-5 h-5"></i>
       <span class="text-[10px] font-bold mt-0.5">Conversas</span>
-      <span id="badge-inbox-total" class="absolute -top-1 right-2 bg-[#39FF14] text-black text-[9px] font-bold w-4 h-4 rounded-full hidden flex items-center justify-center">0</span>
     </button>
   </nav>
 
-  <!-- MODAL DE PERFIL EXPANSÍVEL DETALHADO -->
+  <!-- MODAL DE PERFIL EXPANSÍVEL -->
   <div id="profile-modal" class="fixed inset-0 z-50 bg-black/95 flex flex-col justify-end hidden">
     <div class="bg-zinc-950 border-t border-zinc-800 rounded-t-3xl max-h-[90vh] overflow-y-auto p-5 relative space-y-4">
       <button id="btn-fechar-perfil" class="absolute top-4 right-4 p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white">
@@ -222,7 +219,7 @@
     </div>
   </div>
 
-  <!-- JANELA DE CHAT -->
+  <!-- JANELA DE CHAT PRIVADO -->
   <div id="chat-modal" class="fixed inset-0 bg-black z-50 flex flex-col hidden">
     <div class="bg-zinc-950 px-4 py-3 border-b border-zinc-900 flex justify-between items-center">
       <div class="flex items-center space-x-3">
@@ -259,7 +256,6 @@
     let usuariosReaisConectados = [];
     let conversasInbox = {};
 
-    // Alternar Cadastro / Login
     const btnTabCad = document.getElementById('tab-btn-cadastro');
     const btnTabLog = document.getElementById('tab-btn-login');
     const formCad = document.getElementById('form-cadastro');
@@ -291,7 +287,6 @@
       socket.emit('registrar-usuario', meuPerfil);
     }
 
-    // Auto-login
     window.addEventListener('load', () => {
       const sessaoSalva = localStorage.getItem('colae_usuario');
       if (sessaoSalva) {
@@ -346,14 +341,14 @@
       location.reload();
     });
 
-    // SISTEMA DE STATUS VERDE (ONLINE) / AMARELO (AUSENTE)
+    // STATUS ONLINE / AUSENTE
     let tempoInatividade;
     function resetarInatividade() {
       clearTimeout(tempoInatividade);
       socket.emit('change-status', 'online');
       tempoInatividade = setTimeout(() => {
         socket.emit('change-status', 'away');
-      }, 120000); // 2 minutos
+      }, 120000);
     }
     window.addEventListener('mousemove', resetarInatividade);
     window.addEventListener('touchstart', resetarInatividade);
@@ -362,7 +357,7 @@
       else resetarInatividade();
     });
 
-    // RECEBER LISTA DE USUÁRIOS REAIS
+    // GRADE DE PERFIS REAIS
     const grid = document.getElementById('grid-perfis');
     const filterInput = document.getElementById('filter-distancia');
     const labelDistancia = document.getElementById('label-distancia');
@@ -387,8 +382,6 @@
       filtrados.forEach(user => {
         const card = document.createElement('div');
         card.className = "relative group cursor-pointer overflow-hidden rounded-xl bg-zinc-950 border border-zinc-900 shadow-md transition hover:border-[#39FF14]";
-        
-        // Cor do status: Verde (online) / Amarelo (away)
         const statusCor = user.status === 'online' ? 'bg-[#39FF14]' : 'bg-yellow-400';
 
         card.innerHTML = `
@@ -447,7 +440,7 @@
     document.getElementById('btn-iniciar-chat-perfil').addEventListener('click', () => {
       modalPerfil.classList.add('hidden');
       if (usuarioSelecionadoPerfil) {
-        abrirChat(usuarioSelecionadoPerfil.socketId, usuarioSelecionadoPerfil.nome, `${usuarioSelecionadoPerfil.distKm} km`);
+        abrirChat(usuarioSelecionadoPerfil, `${usuarioSelecionadoPerfil.distKm} km`);
       }
     });
 
@@ -502,20 +495,20 @@
             <span class="text-[10px] text-zinc-500">${chat.hora}</span>
           </div>
         `;
-        item.addEventListener('click', () => abrirChat(chat.socketId, chat.nome, "Perto de você"));
+        item.addEventListener('click', () => abrirChat(chat, "Perto de você"));
         inboxContainer.appendChild(item);
       });
     }
 
-    // CHAT PRIVADO & BALÕES (VERDE NEON / CINZA)
+    // ENVIO E RECEBIMENTO DE MENSAGENS CORRIGIDO
     const modalChat = document.getElementById('chat-modal');
     const messagesBox = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
 
-    function abrirChat(socketId, nome, distancia) {
+    function abrirChat(targetUser, distancia) {
       if (!meuPerfil) return alert('Faça login primeiro!');
-      usuarioAtivoChat = { socketId, nome };
-      document.getElementById('chat-user-nome').innerText = nome;
+      usuarioAtivoChat = targetUser;
+      document.getElementById('chat-user-nome').innerText = targetUser.nome;
       document.getElementById('chat-user-distancia').innerText = distancia;
       messagesBox.innerHTML = '<div class="text-center text-xs text-zinc-600 my-2">Conversa iniciada no Colaê</div>';
       modalChat.classList.remove('hidden');
@@ -534,7 +527,6 @@
       if (eImagem) {
         inner = `<img src="${conteudo}" class="max-w-[220px] rounded-2xl border border-zinc-800 shadow-md">`;
       } else {
-        // Balão enviado = Verde Neon | Balão recebido = Cinza
         const estiloBalao = eMinha 
           ? 'bg-[#39FF14] text-black font-semibold' 
           : 'bg-zinc-900 text-white border border-zinc-800';
@@ -557,17 +549,20 @@
 
       adicionarMensagemTela(texto, true, false);
 
-      // Salva na Inbox
-      conversasInbox[usuarioAtivoChat.socketId] = {
+      const destKey = usuarioAtivoChat.nick || usuarioAtivoChat.socketId;
+
+      conversasInbox[destKey] = {
         socketId: usuarioAtivoChat.socketId,
+        nick: usuarioAtivoChat.nick,
         nome: usuarioAtivoChat.nome,
-        foto: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
+        foto: usuarioAtivoChat.foto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
         ultimaMsg: texto,
         hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
       socket.emit('send-private-message', {
         paraId: usuarioAtivoChat.socketId,
+        paraNick: usuarioAtivoChat.nick,
         texto: texto,
         tipo: 'texto'
       });
@@ -581,6 +576,7 @@
         adicionarMensagemTela(urlFoto, true, true);
         socket.emit('send-private-message', {
           paraId: usuarioAtivoChat.socketId,
+          paraNick: usuarioAtivoChat.nick,
           texto: urlFoto,
           tipo: 'imagem'
         });
@@ -591,16 +587,18 @@
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); });
 
     socket.on('receive-private-message', (data) => {
-      // Salva na Inbox
-      conversasInbox[data.deId] = {
+      const senderKey = data.deNick || data.deId;
+
+      conversasInbox[senderKey] = {
         socketId: data.deId,
+        nick: data.deNick,
         nome: data.deNome,
         foto: data.deFoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
         ultimaMsg: data.tipo === 'imagem' ? '[Imagem]' : data.texto,
         hora: data.timestamp
       };
 
-      if (usuarioAtivoChat && usuarioAtivoChat.socketId === data.deId && !modalChat.classList.contains('hidden')) {
+      if (usuarioAtivoChat && (usuarioAtivoChat.nick === data.deNick || usuarioAtivoChat.socketId === data.deId) && !modalChat.classList.contains('hidden')) {
         adicionarMensagemTela(data.texto, false, data.tipo === 'imagem');
       }
     });
