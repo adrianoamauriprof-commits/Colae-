@@ -35,7 +35,7 @@
     </div>
   </div>
 
-  <!-- MODAL DE CADASTRO / LOGIN -->
+  <!-- MODAL DE CADASTRO / LOGIN / RECUPERAÇÃO -->
   <div id="login-modal" class="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center p-6 overflow-y-auto">
     <div class="w-full max-w-sm flex flex-col items-center space-y-5 my-auto">
       <div class="text-center space-y-2">
@@ -44,16 +44,33 @@
         <p class="text-xs text-zinc-400">Entre com seu nickname ou crie seu perfil para colar com a galera real.</p>
       </div>
 
-      <div class="flex w-full bg-zinc-900 rounded-xl p-1 border border-zinc-800 text-xs font-bold">
+      <div id="abas-auth" class="flex w-full bg-zinc-900 rounded-xl p-1 border border-zinc-800 text-xs font-bold">
         <button id="tab-btn-cadastro" type="button" class="flex-1 py-2 rounded-lg bg-[#39FF14] text-black transition font-bold">Criar Conta</button>
         <button id="tab-btn-login" type="button" class="flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition font-bold">Já tenho conta</button>
       </div>
 
       <!-- FORMULÁRIO CADASTRO -->
       <form id="form-cadastro" class="w-full space-y-3">
+        <!-- FOTO DE PERFIL DA GALERIA -->
+        <div class="flex flex-col items-center space-y-2">
+          <div class="relative w-20 h-20 rounded-full bg-zinc-900 border-2 border-[#39FF14] overflow-hidden flex items-center justify-center group cursor-pointer" onclick="document.getElementById('cad-foto-input').click()">
+            <img id="cad-foto-preview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition">
+              <i data-lucide="camera" class="w-6 h-6 text-white"></i>
+            </div>
+          </div>
+          <button type="button" onclick="document.getElementById('cad-foto-input').click()" class="text-xs text-[#39FF14] font-medium hover:underline">Escolher Foto da Galeria</button>
+          <input type="file" id="cad-foto-input" accept="image/*" class="hidden">
+        </div>
+
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Nome de Exibição</label>
           <input type="text" id="cad-nome" required placeholder="Ex: Rodrigo Silva" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
+        </div>
+
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">E-mail (para recuperação de conta)</label>
+          <input type="email" id="cad-email" required placeholder="seuemail@exemplo.com" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
         
         <div class="grid grid-cols-2 gap-2">
@@ -81,6 +98,7 @@
           <input type="password" id="cad-senha" required placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
 
+        <!-- DETALHES DO PERFIL EXPANSÍVEL -->
         <div class="pt-2 border-t border-zinc-900 space-y-2">
           <p class="text-[11px] text-[#39FF14] font-bold uppercase tracking-wider">Perfil Expansível (Opcional)</p>
           <div>
@@ -120,10 +138,41 @@
           <label class="text-xs text-zinc-400 font-medium block mb-1">Sua Senha</label>
           <input type="password" id="login-senha" required placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
+        <div class="text-right">
+          <button id="btn-esqueceu-senha" type="button" class="text-xs text-[#39FF14] hover:underline font-medium">Esqueceu a senha?</button>
+        </div>
         <button type="submit" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4">
           <span>Entrar na Conta</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
+      </form>
+
+      <!-- FORMULÁRIO RECUPERAÇÃO VIA E-MAIL -->
+      <form id="form-recuperar" class="w-full space-y-3 hidden">
+        <h3 class="text-sm font-bold text-[#39FF14] text-center">Recuperar Acesso via E-mail</h3>
+        <div>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Informe seu E-mail Cadastrado</label>
+          <input type="email" id="rec-email" required placeholder="seuemail@exemplo.com" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
+        </div>
+        <button id="btn-enviar-codigo" type="button" class="w-full bg-zinc-800 text-white font-bold py-2 rounded-xl text-xs hover:bg-zinc-700 transition">Enviar Código de Segurança</button>
+
+        <div id="box-codigo-verificacao" class="space-y-3 hidden">
+          <div>
+            <label class="text-xs text-zinc-400 font-medium block mb-1">Código de 6 dígitos</label>
+            <input type="text" id="rec-codigo-digitado" placeholder="Ex: 123456" maxlength="6" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition text-center font-mono text-base tracking-widest">
+          </div>
+          <div>
+            <label class="text-xs text-zinc-400 font-medium block mb-1">Nova Senha</label>
+            <input type="password" id="rec-nova-senha" placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
+          </div>
+          <button type="submit" class="w-full neon-bg text-black font-bold py-3 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2">
+            <span>Redefinir Senha e Entrar</span>
+          </button>
+        </div>
+
+        <div class="text-center pt-2">
+          <button id="btn-voltar-login" type="button" class="text-xs text-zinc-400 hover:text-white">Voltar ao Login</button>
+        </div>
       </form>
     </div>
   </div>
@@ -260,7 +309,10 @@
     </div>
 
     <div class="p-3 bg-zinc-950 border-t border-zinc-900 flex items-center space-x-2">
-      <button id="btn-envio-foto" title="Enviar Imagem" class="p-2.5 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-400 hover:text-[#39FF14] transition">
+      <!-- INPUT INVISÍVEL DE GALERIA PARA O CHAT -->
+      <input type="file" id="chat-foto-input" accept="image/*" class="hidden">
+      
+      <button id="btn-envio-foto" title="Escolher Imagem da Galeria" class="p-2.5 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-400 hover:text-[#39FF14] transition">
         <i data-lucide="image" class="w-4 h-4"></i>
       </button>
       <input type="text" id="chat-input" placeholder="Manda um 'Colaê'..." class="flex-1 bg-zinc-900 text-sm text-white px-4 py-2.5 rounded-full border border-zinc-800 focus:outline-none focus:border-[#39FF14]">
@@ -276,6 +328,7 @@
     let usuarioAtivoChat = null;
     let usuarioSelecionadoPerfil = null;
     let filtroSomenteOnline = false;
+    let fotoPerfilCadastradaBase64 = "";
 
     let usuariosReaisConectados = [];
     let conversasInbox = JSON.parse(localStorage.getItem('colae_inbox') || '{}');
@@ -300,20 +353,20 @@
       atualizarBadgeTotalNaoLidas();
     });
 
-    socket.on('connect', () => {
-      if (meuPerfil) socket.emit('registrar-usuario', meuPerfil);
-    });
-
     const btnTabCad = document.getElementById('tab-btn-cadastro');
     const btnTabLog = document.getElementById('tab-btn-login');
     const formCad = document.getElementById('form-cadastro');
     const formLog = document.getElementById('form-login');
+    const formRec = document.getElementById('form-recuperar');
+    const abasAuth = document.getElementById('abas-auth');
 
     btnTabCad.addEventListener('click', () => {
       btnTabCad.className = "flex-1 py-2 rounded-lg bg-[#39FF14] text-black transition font-bold";
       btnTabLog.className = "flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition font-bold";
       formCad.classList.remove('hidden');
       formLog.classList.add('hidden');
+      formRec.classList.add('hidden');
+      abasAuth.classList.remove('hidden');
     });
 
     btnTabLog.addEventListener('click', () => {
@@ -321,6 +374,32 @@
       btnTabCad.className = "flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition font-bold";
       formLog.classList.remove('hidden');
       formCad.classList.add('hidden');
+      formRec.classList.add('hidden');
+      abasAuth.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-esqueceu-senha').addEventListener('click', () => {
+      formLog.classList.add('hidden');
+      formCad.classList.add('hidden');
+      abasAuth.classList.add('hidden');
+      formRec.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-voltar-login').addEventListener('click', () => {
+      btnTabLog.click();
+    });
+
+    // UPLOAD FOTO DE PERFIL GALERIA
+    document.getElementById('cad-foto-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          fotoPerfilCadastradaBase64 = evt.target.result;
+          document.getElementById('cad-foto-preview').src = fotoPerfilCadastradaBase64;
+        };
+        reader.readAsDataURL(file);
+      }
     });
 
     function iniciarSessao(dadosUsuario) {
@@ -331,54 +410,106 @@
       document.getElementById('img-perfil-header').src = meuPerfil.foto;
       document.getElementById('minha-foto-header').classList.remove('hidden');
       document.getElementById('btn-logout').classList.remove('hidden');
-
-      socket.emit('registrar-usuario', meuPerfil);
     }
 
     window.addEventListener('load', () => {
       const sessaoSalva = localStorage.getItem('colae_usuario');
       if (sessaoSalva) {
-        try { iniciarSessao(JSON.parse(sessaoSalva)); } 
-        catch(e) { localStorage.removeItem('colae_usuario'); }
+        try { 
+          const perfil = JSON.parse(sessaoSalva);
+          iniciarSessao(perfil); 
+        } catch(e) { 
+          localStorage.removeItem('colae_usuario'); 
+        }
       }
     });
 
+    // SUBMIT CADASTRO
     formCad.addEventListener('submit', (e) => {
       e.preventDefault();
       let nick = document.getElementById('cad-nick').value.trim().toLowerCase();
       if (!nick.startsWith('@')) nick = '@' + nick;
 
-      const novoUsuario = {
+      const dadosCadastro = {
         nome: document.getElementById('cad-nome').value.trim(),
+        email: document.getElementById('cad-email').value.trim(),
         idade: document.getElementById('cad-idade').value,
         sexo: document.getElementById('cad-sexo').value,
         nick,
+        senha: document.getElementById('cad-senha').value,
         bio: document.getElementById('cad-bio').value.trim(),
         altura: document.getElementById('cad-altura').value,
         procura: document.getElementById('cad-procura').value,
-        foto: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80"
+        foto: fotoPerfilCadastradaBase64 || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80"
       };
 
-      // Salva a conta no cadastro local para consultas de login
-      localStorage.setItem(`colae_account_${nick}`, JSON.stringify({ ...novoUsuario, senha: document.getElementById('cad-senha').value }));
-      
-      iniciarSessao(novoUsuario);
+      socket.emit('solicitar-cadastro', dadosCadastro);
     });
 
+    socket.on('resposta-cadastro', (res) => {
+      if (res.sucesso) {
+        iniciarSessao(res.usuario);
+      } else {
+        alert(res.erro);
+      }
+    });
+
+    // SUBMIT LOGIN
     formLog.addEventListener('submit', (e) => {
       e.preventDefault();
       let nick = document.getElementById('login-nick').value.trim().toLowerCase();
       if (!nick.startsWith('@')) nick = '@' + nick;
-      const conta = localStorage.getItem(`colae_account_${nick}`);
+      const senha = document.getElementById('login-senha').value;
 
-      if (conta) {
-        const dados = JSON.parse(conta);
-        if (dados.senha === document.getElementById('login-senha').value) {
-          iniciarSessao(dados);
-          return;
-        }
+      socket.emit('solicitar-login', { nick, senha });
+    });
+
+    socket.on('resposta-login', (res) => {
+      if (res.sucesso) {
+        iniciarSessao(res.usuario);
+      } else {
+        alert(res.erro);
       }
-      alert("Nickname ou senha incorretos!");
+    });
+
+    // SUBMIT RECUPERAÇÃO VIA SERVIDOR
+    let emailRecuperacaoGlobal = "";
+    document.getElementById('btn-enviar-codigo').addEventListener('click', () => {
+      const emailDigitado = document.getElementById('rec-email').value.trim();
+      if (!emailDigitado) return alert("Digite o e-mail.");
+
+      emailRecuperacaoGlobal = emailDigitado;
+      socket.emit('solicitar-codigo-email', emailDigitado);
+    });
+
+    socket.on('resposta-codigo-email', (res) => {
+      if (res.sucesso) {
+        alert(`📩 [SIMULAÇÃO E-MAIL DE RECUPERAÇÃO COLAÊ]\n\nPara: ${res.email}\nSeu código de verificação é: ${res.codigo}`);
+        document.getElementById('box-codigo-verificacao').classList.remove('hidden');
+      } else {
+        alert(res.erro);
+      }
+    });
+
+    formRec.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const codigo = document.getElementById('rec-codigo-digitado').value.trim();
+      const novaSenha = document.getElementById('rec-nova-senha').value;
+
+      socket.emit('solicitar-redefinicao-senha', {
+        email: emailRecuperacaoGlobal,
+        codigo,
+        novaSenha
+      });
+    });
+
+    socket.on('resposta-redefinicao-senha', (res) => {
+      if (res.sucesso) {
+        alert("Senha redefinida com sucesso! Entrando na conta...");
+        iniciarSessao(res.usuario);
+      } else {
+        alert(res.erro);
+      }
     });
 
     document.getElementById('btn-logout').addEventListener('click', () => {
@@ -386,7 +517,7 @@
       location.reload();
     });
 
-    // CONTROLE DE STATUS (ONLINE/AUSENTE)
+    // CONTROLE DE STATUS
     let tempoInatividade;
     function resetarInatividade() {
       clearTimeout(tempoInatividade);
@@ -402,7 +533,7 @@
       else resetarInatividade();
     });
 
-    // BOTÕES DE FILTRO (TODOS VS APENAS ONLINE)
+    // BOTÕES DE FILTRO
     const btnFilterTodos = document.getElementById('filter-btn-todos');
     const btnFilterOnline = document.getElementById('filter-btn-online');
 
@@ -426,7 +557,6 @@
     const labelDistancia = document.getElementById('label-distancia');
 
     socket.on('lista-usuarios-reais', (usuarios) => {
-      // Recebe a lista global enviada pelo backend
       usuariosReaisConectados = usuarios.filter(u => u.nick.toLowerCase() !== (meuPerfil ? meuPerfil.nick.toLowerCase() : ''));
       renderizarPerfis();
     });
@@ -451,7 +581,7 @@
         const card = document.createElement('div');
         card.className = "relative group cursor-pointer overflow-hidden rounded-xl bg-zinc-950 border border-zinc-900 shadow-md transition hover:border-[#39FF14]";
         
-        let statusCor = 'bg-zinc-600'; // Offline por padrão (cinza)
+        let statusCor = 'bg-zinc-600';
         if (user.status === 'online') statusCor = 'bg-[#39FF14]';
         else if (user.status === 'away') statusCor = 'bg-yellow-400';
 
@@ -694,20 +824,45 @@
       chatInput.value = '';
     }
 
+    // UPLOAD FOTO NO CHAT DIRETO DA GALERIA
+    const inputChatFoto = document.getElementById('chat-foto-input');
     document.getElementById('btn-envio-foto').addEventListener('click', () => {
-      const urlFoto = prompt("Cole a URL da foto:");
-      if (urlFoto && usuarioAtivoChat) {
-        adicionarMensagemTela(urlFoto, true, true);
-        const destNick = usuarioAtivoChat.nick || usuarioAtivoChat.socketId;
-        salvarMensagemNoHistorico(destNick, meuPerfil.nick, urlFoto, 'imagem');
+      inputChatFoto.click();
+    });
 
-        socket.emit('send-private-message', {
-          paraId: usuarioAtivoChat.socketId,
-          paraNick: destNick,
-          deNick: meuPerfil.nick,
-          texto: urlFoto,
-          tipo: 'imagem'
-        });
+    inputChatFoto.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file && usuarioAtivoChat) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const imgBase64 = evt.target.result;
+          adicionarMensagemTela(imgBase64, true, true);
+
+          const destNick = usuarioAtivoChat.nick || usuarioAtivoChat.socketId;
+          salvarMensagemNoHistorico(destNick, meuPerfil.nick, imgBase64, 'imagem');
+
+          conversasInbox[destNick] = {
+            socketId: usuarioAtivoChat.socketId,
+            nick: destNick,
+            nome: usuarioAtivoChat.nome,
+            foto: usuarioAtivoChat.foto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
+            ultimaMsg: '[Imagem]',
+            hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            naoLidas: 0
+          };
+          localStorage.setItem('colae_inbox', JSON.stringify(conversasInbox));
+
+          socket.emit('send-private-message', {
+            paraId: usuarioAtivoChat.socketId,
+            paraNick: destNick,
+            deNick: meuPerfil.nick,
+            texto: imgBase64,
+            tipo: 'imagem'
+          });
+
+          inputChatFoto.value = '';
+        };
+        reader.readAsDataURL(file);
       }
     });
 
