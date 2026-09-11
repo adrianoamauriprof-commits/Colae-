@@ -6,6 +6,7 @@
   <title>Colaê - Bate-Papo & Encontros Real-Time</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     .neon-text {
@@ -53,7 +54,23 @@
       <div class="text-center space-y-2">
         <i data-lucide="zap" class="text-[#39FF14] w-12 h-12 mx-auto fill-[#39FF14] animate-bounce"></i>
         <h1 class="text-5xl font-black tracking-wider neon-text lowercase">colaê</h1>
-        <p class="text-xs text-zinc-400">Entre com seu nickname ou crie sua conta para colar com a galera real.</p>
+        <p class="text-xs text-zinc-400">Entre com sua conta Google ou nickname para colar com a galera real.</p>
+      </div>
+
+      <!-- BOTÃO OFICIAL DO GOOGLE COM O CLIENT ID INSERIDO -->
+      <div class="w-full pt-1 flex justify-center">
+        <div id="g_id_onload"
+             data-client_id="255306385759-9rmb43jusohkrivmp4bqulr0ursp1ehu.apps.googleusercontent.com"
+             data-callback="handleGoogleLogin"
+             data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin w-full flex justify-center" data-type="standard" data-size="large" data-theme="filled_black" data-text="sign_in_with" data-shape="pill" data-logo_alignment="left"></div>
+      </div>
+
+      <div class="flex items-center w-full my-2 text-zinc-700">
+        <div class="flex-1 border-t border-zinc-800"></div>
+        <span class="px-3 text-[11px] text-zinc-500 uppercase font-bold">ou use o sistema</span>
+        <div class="flex-1 border-t border-zinc-800"></div>
       </div>
 
       <div id="abas-auth" class="flex w-full bg-zinc-900 rounded-xl p-1 border border-zinc-800 text-xs font-bold">
@@ -69,7 +86,7 @@
         </div>
 
         <div>
-          <label class="text-xs text-zinc-400 font-medium block mb-1">E-mail (para recuperação)</label>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">E-mail</label>
           <input type="email" id="cad-email" placeholder="seuemail@exemplo.com" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
 
@@ -99,45 +116,14 @@
           <label class="text-xs text-zinc-400 font-medium block mb-1">Sua Senha</label>
           <input type="password" id="login-senha" placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
-        <div class="text-right">
-          <button type="button" onclick="alternarAba('recuperar')" class="text-xs text-[#39FF14] hover:underline font-medium cursor-pointer">Esqueceu a senha?</button>
-        </div>
         <button type="button" onclick="enviarLogin()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-2 cursor-pointer">
           <span>Entrar na Conta</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
       </div>
-
-      <!-- FORMULÁRIO RECUPERAÇÃO VIA E-MAIL -->
-      <div id="box-recuperar" class="w-full space-y-3 hidden">
-        <h3 class="text-sm font-bold text-[#39FF14] text-center">Recuperar Acesso via E-mail</h3>
-        <div>
-          <label class="text-xs text-zinc-400 font-medium block mb-1">Informe seu E-mail Cadastrado</label>
-          <input type="email" id="rec-email" placeholder="seuemail@exemplo.com" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
-        </div>
-        <button type="button" onclick="solicitarCodigo()" class="w-full bg-zinc-800 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-zinc-700 transition cursor-pointer">Enviar Código de Segurança</button>
-
-        <div id="box-codigo-verificacao" class="space-y-3 hidden">
-          <div>
-            <label class="text-xs text-zinc-400 font-medium block mb-1">Código de 6 dígitos</label>
-            <input type="text" id="rec-codigo-digitado" placeholder="Ex: 123456" maxlength="6" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition text-center font-mono text-base tracking-widest">
-          </div>
-          <div>
-            <label class="text-xs text-zinc-400 font-medium block mb-1">Nova Senha</label>
-            <input type="password" id="rec-nova-senha" placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
-          </div>
-          <button type="button" onclick="redefinirSenha()" class="w-full neon-bg text-black font-bold py-3 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 cursor-pointer">
-            <span>Redefinir Senha e Entrar</span>
-          </button>
-        </div>
-
-        <div class="text-center pt-2">
-          <button type="button" onclick="alternarAba('login')" class="text-xs text-zinc-400 hover:text-white cursor-pointer">Voltar ao Login</button>
-        </div>
-      </div>
     </div>
 
-    <!-- COPYRIGHT NO RODAPÉ DO MODAL -->
+    <!-- COPYRIGHT -->
     <div class="w-full text-center text-[10px] text-zinc-500 pt-4 pb-2">
       &copy; 2026 Colaê. Todos os direitos reservados.
     </div>
@@ -305,10 +291,14 @@
 
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Orientação Sexual</label>
-          <button type="button" onclick="abrirModalSexualidades()" id="edit-btn-sexualidade" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm text-left flex justify-between items-center cursor-pointer hover:border-[#39FF14]">
-            <span id="edit-sex-text">Selecione...</span>
-            <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-400"></i>
-          </button>
+          <select id="edit-orientacao" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#39FF14]">
+            <option value="Heterossexual">Heterossexual</option>
+            <option value="Homossexual">Homossexual</option>
+            <option value="Bissexual">Bissexual</option>
+            <option value="Pansexual">Pansexual</option>
+            <option value="Assexual">Assexual</option>
+            <option value="Outro">Outro</option>
+          </select>
         </div>
 
         <div>
@@ -383,25 +373,11 @@
     let usuarioAtivoChat = null;
     let usuarioSelecionadoPerfil = null;
     let filtroSomenteOnline = false;
-    let emailRecuperacaoGlobal = "";
-    let orientacaoSelecionadaTemp = "Heterossexual";
     let papelSelecionadoTemp = "Versátil";
 
     let usuariosReaisConectados = [];
     let conversasInbox = JSON.parse(localStorage.getItem('colae_inbox') || '{}');
     let historicoMensagens = JSON.parse(localStorage.getItem('colae_historico_msgs') || '{}');
-
-    const listaSexualidades = [
-      "Heterossexual",
-      "Homossexual",
-      "Bissexual",
-      "Pansexual",
-      "Assexual",
-      "Demissexual",
-      "Queer",
-      "Fluido",
-      "Outro"
-    ];
 
     const listapapeis = ["Ativo", "Passivo", "Versátil", "Prefiro não responder"];
 
@@ -414,9 +390,40 @@
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
       atualizarBadgeTotalNaoLidas();
-      montarOpcoesSexualidadeModal();
-      atualizarTextoBotaoOrientacao();
       montarChavesPapeis();
+    });
+
+    function decodeJwtResponse(token) {
+      try {
+        let base64Url = token.split('.')[1];
+        let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        let jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function handleGoogleLogin(response) {
+      const responsePayload = decodeJwtResponse(response.credential);
+      if (responsePayload) {
+        const dadosGoogle = {
+          email: responsePayload.email,
+          nome: responsePayload.name,
+          foto: responsePayload.picture
+        };
+        socket.emit('google-auth', dadosGoogle);
+      }
+    }
+
+    socket.on('resposta-google-auth', (res) => {
+      if (res.sucesso) {
+        iniciarSessao(res.usuario);
+      } else {
+        alert("Erro ao autenticar com o Google.");
+      }
     });
 
     function montarChavesPapeis() {
@@ -441,42 +448,9 @@
       montarChavesPapeis();
     }
 
-    function montarOpcoesSexualidadeModal() {
-      const container = document.getElementById('lista-opcoes-sexualidade');
-      container.innerHTML = '';
-      listaSexualidades.forEach(sex => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = "w-full text-left px-3 py-2.5 rounded-xl bg-zinc-900 hover:bg-[#39FF14] hover:text-black transition text-xs font-medium cursor-pointer";
-        btn.innerText = sex;
-        btn.onclick = () => selecionarSexualidade(sex);
-        container.appendChild(btn);
-      });
-    }
-
-    function abrirModalSexualidades() {
-      document.getElementById('modal-sexualidades').classList.remove('hidden');
-    }
-
-    function fecharModalSexualidades() {
-      document.getElementById('modal-sexualidades').classList.add('hidden');
-    }
-
-    function selecionarSexualidade(sexo) {
-      orientacaoSelecionadaTemp = sexo;
-      atualizarTextoBotaoOrientacao();
-      fecharModalSexualidades();
-    }
-
-    function atualizarTextoBotaoOrientacao() {
-      document.getElementById('edit-sex-text').innerText = orientacaoSelecionadaTemp;
-    }
-
     function alternarAba(aba) {
       document.getElementById('box-cadastro').classList.toggle('hidden', aba !== 'cadastro');
       document.getElementById('box-login').classList.toggle('hidden', aba !== 'login');
-      document.getElementById('box-recuperar').classList.toggle('hidden', aba !== 'recuperar');
-      document.getElementById('abas-auth').classList.toggle('hidden', aba === 'recuperar');
 
       if (aba === 'cadastro') {
         document.getElementById('tab-btn-cadastro').className = "flex-1 py-2.5 rounded-lg bg-[#39FF14] text-black transition font-bold cursor-pointer";
@@ -628,51 +602,6 @@
       }
     });
 
-    function solicitarCodigo() {
-      const emailDigitado = document.getElementById('rec-email').value.trim();
-      if (!emailDigitado) {
-        alert("Por favor, digite o e-mail cadastrado.");
-        return;
-      }
-
-      emailRecuperacaoGlobal = emailDigitado;
-      socket.emit('solicitar-codigo-email', emailDigitado);
-    }
-
-    socket.on('resposta-codigo-email', (res) => {
-      if (res.sucesso) {
-        alert(`📩 [SIMULAÇÃO E-MAIL DE RECUPERAÇÃO COLAÊ]\n\nPara: ${res.email}\nSeu código de verificação é: ${res.codigo}`);
-        document.getElementById('box-codigo-verificacao').classList.remove('hidden');
-      } else {
-        alert(res.erro);
-      }
-    });
-
-    function redefinirSenha() {
-      const codigo = document.getElementById('rec-codigo-digitado').value.trim();
-      const novaSenha = document.getElementById('rec-nova-senha').value;
-
-      if (!codigo || !novaSenha) {
-        alert("Digite o código de 6 dígitos e a nova senha.");
-        return;
-      }
-
-      socket.emit('solicitar-redefinicao-senha', {
-        email: emailRecuperacaoGlobal,
-        codigo,
-        novaSenha
-      });
-    }
-
-    socket.on('resposta-redefinicao-senha', (res) => {
-      if (res.sucesso) {
-        alert("Senha redefinida com sucesso! Entrando na conta...");
-        iniciarSessao(res.usuario);
-      } else {
-        alert(res.erro);
-      }
-    });
-
     function fazerLogout() {
       localStorage.removeItem('colae_usuario');
       location.reload();
@@ -683,9 +612,8 @@
       document.getElementById('edit-nome').value = meuPerfil.nome || '';
       document.getElementById('edit-idade').value = meuPerfil.idade || 18;
       document.getElementById('edit-sexo').value = meuPerfil.sexo || 'Outro';
-      orientacaoSelecionadaTemp = meuPerfil.orientacao || 'Heterossexual';
+      document.getElementById('edit-orientacao').value = meuPerfil.orientacao || 'Heterossexual';
       papelSelecionadoTemp = meuPerfil.papel || 'Versátil';
-      atualizarTextoBotaoOrientacao();
       montarChavesPapeis();
 
       document.getElementById('edit-bio').value = meuPerfil.bio || '';
@@ -717,7 +645,7 @@
       meuPerfil.nome = document.getElementById('edit-nome').value.trim() || meuPerfil.nome;
       meuPerfil.idade = document.getElementById('edit-idade').value;
       meuPerfil.sexo = document.getElementById('edit-sexo').value;
-      meuPerfil.orientacao = orientacaoSelecionadaTemp;
+      meuPerfil.orientacao = document.getElementById('edit-orientacao').value;
       meuPerfil.papel = papelSelecionadoTemp;
       meuPerfil.bio = document.getElementById('edit-bio').value.trim();
       meuPerfil.altura = document.getElementById('edit-altura').value;
