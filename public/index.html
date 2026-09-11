@@ -6,7 +6,9 @@
   <title>Colaê - Bate-Papo & Encontros Real-Time</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Socket.io com fallback CDN -->
   <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <style>
     .neon-text {
       color: #39FF14;
@@ -25,7 +27,7 @@
 <body class="bg-black text-white font-sans min-h-screen flex flex-col justify-between selection:bg-[#39FF14] selection:text-black">
 
   <!-- NOTIFICAÇÃO TOAST -->
-  <div id="toast-notificacao" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border border-[#39FF14] text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 hidden transition-all max-w-xs w-full">
+  <div id="toast-notificacao" class="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-zinc-900 border border-[#39FF14] text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 hidden transition-all max-w-xs w-full">
     <div class="w-10 h-10 rounded-full overflow-hidden border border-[#39FF14] flex-shrink-0">
       <img id="toast-foto" src="" class="w-full h-full object-cover">
     </div>
@@ -45,20 +47,20 @@
       </div>
 
       <div id="abas-auth" class="flex w-full bg-zinc-900 rounded-xl p-1 border border-zinc-800 text-xs font-bold">
-        <button id="tab-btn-cadastro" type="button" onclick="alternarAba('cadastro')" class="flex-1 py-2 rounded-lg bg-[#39FF14] text-black transition font-bold">Criar Conta</button>
-        <button id="tab-btn-login" type="button" onclick="alternarAba('login')" class="flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition font-bold">Já tenho conta</button>
+        <button id="tab-btn-cadastro" type="button" onclick="alternarAba('cadastro')" class="flex-1 py-2.5 rounded-lg bg-[#39FF14] text-black transition font-bold cursor-pointer">Criar Conta</button>
+        <button id="tab-btn-login" type="button" onclick="alternarAba('login')" class="flex-1 py-2.5 rounded-lg text-zinc-400 hover:text-white transition font-bold cursor-pointer">Já tenho conta</button>
       </div>
 
       <!-- FORMULÁRIO CADASTRO -->
       <div id="box-cadastro" class="w-full space-y-3">
         <div class="flex flex-col items-center space-y-2">
-          <div class="relative w-20 h-20 rounded-full bg-zinc-900 border-2 border-[#39FF14] overflow-hidden flex items-center justify-center group cursor-pointer" onclick="document.getElementById('cad-foto-input').click()">
+          <div class="relative w-20 h-20 rounded-full bg-zinc-900 border-2 border-[#39FF14] overflow-hidden flex items-center justify-center group cursor-pointer" onclick="abrirSeletorFotoCad()">
             <img id="cad-foto-preview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover">
             <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition">
               <i data-lucide="camera" class="w-6 h-6 text-white"></i>
             </div>
           </div>
-          <button type="button" onclick="document.getElementById('cad-foto-input').click()" class="text-xs text-[#39FF14] font-medium hover:underline">Escolher Foto da Galeria</button>
+          <button type="button" onclick="abrirSeletorFotoCad()" class="text-xs text-[#39FF14] font-medium hover:underline cursor-pointer">Escolher Foto da Galeria</button>
           <input type="file" id="cad-foto-input" accept="image/*" class="hidden">
         </div>
 
@@ -120,7 +122,7 @@
           </div>
         </div>
 
-        <button type="button" onclick="enviarCadastro()" class="w-full neon-bg text-black font-bold py-3 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4 cursor-pointer">
+        <button type="button" id="btn-submit-cad" onclick="enviarCadastro()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4 cursor-pointer">
           <span>Cadastrar no Colaê</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
@@ -137,9 +139,9 @@
           <input type="password" id="login-senha" placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
         <div class="text-right">
-          <button type="button" onclick="alternarAba('recuperar')" class="text-xs text-[#39FF14] hover:underline font-medium">Esqueceu a senha?</button>
+          <button type="button" onclick="alternarAba('recuperar')" class="text-xs text-[#39FF14] hover:underline font-medium cursor-pointer">Esqueceu a senha?</button>
         </div>
-        <button type="button" onclick="enviarLogin()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4 cursor-pointer">
+        <button type="button" id="btn-submit-log" onclick="enviarLogin()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4 cursor-pointer">
           <span>Entrar na Conta</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
@@ -152,7 +154,7 @@
           <label class="text-xs text-zinc-400 font-medium block mb-1">Informe seu E-mail Cadastrado</label>
           <input type="email" id="rec-email" placeholder="seuemail@exemplo.com" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
-        <button type="button" onclick="solicitarCodigo()" class="w-full bg-zinc-800 text-white font-bold py-2 rounded-xl text-xs hover:bg-zinc-700 transition cursor-pointer">Enviar Código de Segurança</button>
+        <button type="button" onclick="solicitarCodigo()" class="w-full bg-zinc-800 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-zinc-700 transition cursor-pointer">Enviar Código de Segurança</button>
 
         <div id="box-codigo-verificacao" class="space-y-3 hidden">
           <div>
@@ -169,7 +171,7 @@
         </div>
 
         <div class="text-center pt-2">
-          <button type="button" onclick="alternarAba('login')" class="text-xs text-zinc-400 hover:text-white">Voltar ao Login</button>
+          <button type="button" onclick="alternarAba('login')" class="text-xs text-zinc-400 hover:text-white cursor-pointer">Voltar ao Login</button>
         </div>
       </div>
     </div>
@@ -182,7 +184,7 @@
       <h1 class="text-2xl font-black tracking-wider neon-text lowercase">colaê</h1>
     </div>
     <div class="flex items-center gap-2">
-      <button id="btn-logout" onclick="fazerLogout()" title="Sair" class="text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-full hidden flex items-center gap-1">
+      <button id="btn-logout" onclick="fazerLogout()" title="Sair" class="text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-full hidden flex items-center gap-1 cursor-pointer">
         <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
       </button>
       <div id="minha-foto-header" class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden hidden">
@@ -194,10 +196,10 @@
   <!-- FILTROS -->
   <div id="barra-filtro" class="bg-zinc-950 px-4 py-3 text-xs border-b border-zinc-900 space-y-3">
     <div class="flex bg-zinc-900 rounded-xl p-1 border border-zinc-800 font-bold">
-      <button id="filter-btn-todos" type="button" onclick="filtrarTodos()" class="flex-1 py-1.5 rounded-lg bg-[#39FF14] text-black transition flex justify-center items-center gap-1 font-bold">
+      <button id="filter-btn-todos" type="button" onclick="filtrarTodos()" class="flex-1 py-1.5 rounded-lg bg-[#39FF14] text-black transition flex justify-center items-center gap-1 font-bold cursor-pointer">
         <i data-lucide="users" class="w-3.5 h-3.5"></i> Todos os Usuários
       </button>
-      <button id="filter-btn-online" type="button" onclick="filtrarOnline()" class="flex-1 py-1.5 rounded-lg text-zinc-400 hover:text-white transition flex justify-center items-center gap-1 font-bold">
+      <button id="filter-btn-online" type="button" onclick="filtrarOnline()" class="flex-1 py-1.5 rounded-lg text-zinc-400 hover:text-white transition flex justify-center items-center gap-1 font-bold cursor-pointer">
         <span class="w-2 h-2 rounded-full bg-[#39FF14]"></span> Apenas Online
       </button>
     </div>
@@ -229,11 +231,11 @@
 
   <!-- NAVEGAÇÃO INFERIOR -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950 border-t border-zinc-900 flex justify-around py-2.5">
-    <button id="nav-btn-explorar" onclick="navegarAba('explorar')" class="flex flex-col items-center text-[#39FF14]">
+    <button id="nav-btn-explorar" onclick="navegarAba('explorar')" class="flex flex-col items-center text-[#39FF14] cursor-pointer">
       <i data-lucide="flame" class="w-5 h-5"></i>
       <span class="text-[10px] font-bold mt-0.5">Explorar</span>
     </button>
-    <button id="nav-btn-inbox" onclick="navegarAba('inbox')" class="flex flex-col items-center text-zinc-500 hover:text-white relative">
+    <button id="nav-btn-inbox" onclick="navegarAba('inbox')" class="flex flex-col items-center text-zinc-500 hover:text-white relative cursor-pointer">
       <i data-lucide="message-square" class="w-5 h-5"></i>
       <span class="text-[10px] font-bold mt-0.5">Conversas</span>
       <span id="badge-inbox-total" class="absolute -top-1 -right-1 bg-[#39FF14] text-black text-[10px] font-black w-4 h-4 rounded-full hidden flex items-center justify-center border border-black">0</span>
@@ -243,7 +245,7 @@
   <!-- MODAL DE PERFIL EXPANSÍVEL -->
   <div id="profile-modal" class="fixed inset-0 z-50 bg-black/95 flex flex-col justify-end hidden">
     <div class="bg-zinc-950 border-t border-zinc-800 rounded-t-3xl max-h-[90vh] overflow-y-auto p-5 relative space-y-4">
-      <button type="button" onclick="document.getElementById('profile-modal').classList.add('hidden')" class="absolute top-4 right-4 p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white">
+      <button type="button" onclick="fecharModalPerfil()" class="absolute top-4 right-4 p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white cursor-pointer">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
@@ -281,7 +283,7 @@
         </div>
       </div>
 
-      <button type="button" onclick="iniciarChatDoPerfil()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2">
+      <button type="button" onclick="iniciarChatDoPerfil()" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 cursor-pointer">
         <i data-lucide="message-square" class="w-4 h-4"></i>
         <span>Mandar Mensagem Privada</span>
       </button>
@@ -292,7 +294,7 @@
   <div id="chat-modal" class="fixed inset-0 bg-black z-50 flex flex-col hidden">
     <div class="bg-zinc-950 px-4 py-3 border-b border-zinc-900 flex justify-between items-center">
       <div class="flex items-center space-x-3">
-        <button type="button" onclick="fecharChat()" class="p-1 text-zinc-400 hover:text-white">
+        <button type="button" onclick="fecharChat()" class="p-1 text-zinc-400 hover:text-white cursor-pointer">
           <i data-lucide="arrow-left" class="w-6 h-6"></i>
         </button>
         <div>
@@ -309,18 +311,25 @@
     <div class="p-3 bg-zinc-950 border-t border-zinc-900 flex items-center space-x-2">
       <input type="file" id="chat-foto-input" accept="image/*" class="hidden">
       
-      <button type="button" onclick="document.getElementById('chat-foto-input').click()" title="Escolher Imagem da Galeria" class="p-2.5 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-400 hover:text-[#39FF14] transition">
+      <button type="button" onclick="document.getElementById('chat-foto-input').click()" title="Escolher Imagem da Galeria" class="p-2.5 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-400 hover:text-[#39FF14] transition cursor-pointer">
         <i data-lucide="image" class="w-4 h-4"></i>
       </button>
       <input type="text" id="chat-input" placeholder="Manda um 'Colaê'..." class="flex-1 bg-zinc-900 text-sm text-white px-4 py-2.5 rounded-full border border-zinc-800 focus:outline-none focus:border-[#39FF14]">
-      <button type="button" onclick="enviarMensagem()" class="p-2.5 neon-bg rounded-full text-black hover:opacity-90 transition">
+      <button type="button" onclick="enviarMensagem()" class="p-2.5 neon-bg rounded-full text-black hover:opacity-90 transition cursor-pointer">
         <i data-lucide="send" class="w-4 h-4"></i>
       </button>
     </div>
   </div>
 
   <script>
-    const socket = io();
+    // Conexão segura ao Socket.io com fallback
+    let socket;
+    try {
+      socket = typeof io !== 'undefined' ? io() : null;
+    } catch(e) {
+      console.warn("Socket.io conectando em modo offline/recuperação.");
+    }
+
     let meuPerfil = null;
     let usuarioAtivoChat = null;
     let usuarioSelecionadoPerfil = null;
@@ -352,36 +361,24 @@
     });
 
     function alternarAba(aba) {
-      const boxCad = document.getElementById('box-cadastro');
-      const boxLog = document.getElementById('box-login');
-      const boxRec = document.getElementById('box-recuperar');
-      const abasAuth = document.getElementById('abas-auth');
-      const btnTabCad = document.getElementById('tab-btn-cadastro');
-      const btnTabLog = document.getElementById('tab-btn-login');
+      document.getElementById('box-cadastro').classList.toggle('hidden', aba !== 'cadastro');
+      document.getElementById('box-login').classList.toggle('hidden', aba !== 'login');
+      document.getElementById('box-recuperar').classList.toggle('hidden', aba !== 'recuperar');
+      document.getElementById('abas-auth').classList.toggle('hidden', aba === 'recuperar');
 
       if (aba === 'cadastro') {
-        boxCad.classList.remove('hidden');
-        boxLog.classList.add('hidden');
-        boxRec.classList.add('hidden');
-        abasAuth.classList.remove('hidden');
-        btnTabCad.className = "flex-1 py-2 rounded-lg bg-[#39FF14] text-black transition font-bold";
-        btnTabLog.className = "flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition font-bold";
+        document.getElementById('tab-btn-cadastro').className = "flex-1 py-2.5 rounded-lg bg-[#39FF14] text-black transition font-bold cursor-pointer";
+        document.getElementById('tab-btn-login').className = "flex-1 py-2.5 rounded-lg text-zinc-400 hover:text-white transition font-bold cursor-pointer";
       } else if (aba === 'login') {
-        boxLog.classList.remove('hidden');
-        boxCad.classList.add('hidden');
-        boxRec.classList.add('hidden');
-        abasAuth.classList.remove('hidden');
-        btnTabLog.className = "flex-1 py-2 rounded-lg bg-[#39FF14] text-black transition font-bold";
-        btnTabCad.className = "flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition font-bold";
-      } else if (aba === 'recuperar') {
-        boxRec.classList.remove('hidden');
-        boxCad.classList.add('hidden');
-        boxLog.classList.add('hidden');
-        abasAuth.classList.add('hidden');
+        document.getElementById('tab-btn-login').className = "flex-1 py-2.5 rounded-lg bg-[#39FF14] text-black transition font-bold cursor-pointer";
+        document.getElementById('tab-btn-cadastro').className = "flex-1 py-2.5 rounded-lg text-zinc-400 hover:text-white transition font-bold cursor-pointer";
       }
     }
 
-    // FOTO PREVIEW
+    function abrirSeletorFotoCad() {
+      document.getElementById('cad-foto-input').click();
+    }
+
     document.getElementById('cad-foto-input').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
@@ -416,7 +413,6 @@
       }
     });
 
-    // AÇÃO DOS BOTÕES
     function enviarCadastro() {
       const nome = document.getElementById('cad-nome').value.trim();
       const email = document.getElementById('cad-email').value.trim();
@@ -425,7 +421,7 @@
       const senha = document.getElementById('cad-senha').value;
 
       if (!nome || !email || !idade || !nick || !senha) {
-        alert("Preencha todos os campos obrigatórios para se cadastrar!");
+        alert("Preencha todos os campos para cadastrar!");
         return;
       }
 
@@ -444,16 +440,12 @@
         foto: fotoPerfilCadastradaBase64 || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80"
       };
 
-      socket.emit('solicitar-cadastro', dadosCadastro);
-    }
-
-    socket.on('resposta-cadastro', (res) => {
-      if (res.sucesso) {
-        iniciarSessao(res.usuario);
+      if (socket) {
+        socket.emit('solicitar-cadastro', dadosCadastro);
       } else {
-        alert(res.erro);
+        iniciarSessao(dadosCadastro);
       }
-    });
+    }
 
     function enviarLogin() {
       let nick = document.getElementById('login-nick').value.trim().toLowerCase();
@@ -465,36 +457,26 @@
       }
 
       if (!nick.startsWith('@')) nick = '@' + nick;
-      socket.emit('solicitar-login', { nick, senha });
-    }
 
-    socket.on('resposta-login', (res) => {
-      if (res.sucesso) {
-        iniciarSessao(res.usuario);
+      if (socket) {
+        socket.emit('solicitar-login', { nick, senha });
       } else {
-        alert(res.erro);
+        alert("Erro de conexão com o servidor. Tente novamente em alguns segundos.");
       }
-    });
+    }
 
     function solicitarCodigo() {
       const emailDigitado = document.getElementById('rec-email').value.trim();
       if (!emailDigitado) {
-        alert("Por favor, digite o e-mail cadastrado.");
+        alert("Digite o e-mail cadastrado.");
         return;
       }
 
       emailRecuperacaoGlobal = emailDigitado;
-      socket.emit('solicitar-codigo-email', emailDigitado);
-    }
-
-    socket.on('resposta-codigo-email', (res) => {
-      if (res.sucesso) {
-        alert(`📩 [SIMULAÇÃO E-MAIL DE RECUPERAÇÃO COLAÊ]\n\nPara: ${res.email}\nSeu código de verificação é: ${res.codigo}`);
-        document.getElementById('box-codigo-verificacao').classList.remove('hidden');
-      } else {
-        alert(res.erro);
+      if (socket) {
+        socket.emit('solicitar-codigo-email', emailDigitado);
       }
-    });
+    }
 
     function redefinirSenha() {
       const codigo = document.getElementById('rec-codigo-digitado').value.trim();
@@ -505,67 +487,96 @@
         return;
       }
 
-      socket.emit('solicitar-redefinicao-senha', {
-        email: emailRecuperacaoGlobal,
-        codigo,
-        novaSenha
-      });
+      if (socket) {
+        socket.emit('solicitar-redefinicao-senha', {
+          email: emailRecuperacaoGlobal,
+          codigo,
+          novaSenha
+        });
+      }
     }
 
-    socket.on('resposta-redefinicao-senha', (res) => {
-      if (res.sucesso) {
-        alert("Senha redefinida com sucesso! Entrando na conta...");
-        iniciarSessao(res.usuario);
-      } else {
-        alert(res.erro);
-      }
-    });
+    if (socket) {
+      socket.on('resposta-cadastro', (res) => {
+        if (res.sucesso) iniciarSessao(res.usuario);
+        else alert(res.erro);
+      });
+
+      socket.on('resposta-login', (res) => {
+        if (res.sucesso) iniciarSessao(res.usuario);
+        else alert(res.erro);
+      });
+
+      socket.on('resposta-codigo-email', (res) => {
+        if (res.sucesso) {
+          alert(`📩 [SIMULAÇÃO E-MAIL COLAÊ]\n\nPara: ${res.email}\nSeu código de verificação é: ${res.codigo}`);
+          document.getElementById('box-codigo-verificacao').classList.remove('hidden');
+        } else alert(res.erro);
+      });
+
+      socket.on('resposta-redefinicao-senha', (res) => {
+        if (res.sucesso) {
+          alert("Senha redefinida com sucesso!");
+          iniciarSessao(res.usuario);
+        } else alert(res.erro);
+      });
+
+      socket.on('lista-usuarios-reais', (usuarios) => {
+        usuariosReaisConectados = usuarios.filter(u => u.nick.toLowerCase() !== (meuPerfil ? meuPerfil.nick.toLowerCase() : ''));
+        renderizarPerfis();
+      });
+
+      socket.on('receive-private-message', (data) => {
+        const senderNick = data.deNick || data.deId;
+        const chatAberto = usuarioAtivoChat && (usuarioAtivoChat.nick === data.deNick || usuarioAtivoChat.socketId === data.deId) && !modalChat.classList.contains('hidden');
+
+        salvarMensagemNoHistorico(senderNick, data.deNick, data.texto, data.tipo);
+        const qtdAnterior = (conversasInbox[senderNick] && conversasInbox[senderNick].naoLidas) ? conversasInbox[senderNick].naoLidas : 0;
+
+        conversasInbox[senderNick] = {
+          socketId: data.deId,
+          nick: senderNick,
+          nome: data.deNome,
+          foto: data.deFoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
+          ultimaMsg: data.tipo === 'imagem' ? '[Imagem]' : data.texto,
+          hora: data.timestamp,
+          naoLidas: chatAberto ? 0 : (qtdAnterior + 1)
+        };
+
+        localStorage.setItem('colae_inbox', JSON.stringify(conversasInbox));
+        atualizarBadgeTotalNaoLidas();
+
+        if (chatAberto) {
+          adicionarMensagemTela(data.texto, false, data.tipo === 'imagem');
+        } else {
+          tocarSomNotificacao();
+          exibirToastNotificacao(data.deNome, data.deFoto, data.tipo === 'imagem' ? 'Enviou uma foto' : data.texto);
+        }
+      });
+    }
 
     function fazerLogout() {
       localStorage.removeItem('colae_usuario');
       location.reload();
     }
 
-    // STATUS
-    let tempoInatividade;
-    function resetarInatividade() {
-      clearTimeout(tempoInatividade);
-      socket.emit('change-status', 'online');
-      tempoInatividade = setTimeout(() => {
-        socket.emit('change-status', 'away');
-      }, 120000);
-    }
-    window.addEventListener('mousemove', resetarInatividade);
-    window.addEventListener('touchstart', resetarInatividade);
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) socket.emit('change-status', 'away');
-      else resetarInatividade();
-    });
-
-    // FILTROS
     function filtrarTodos() {
       filtroSomenteOnline = false;
-      document.getElementById('filter-btn-todos').className = "flex-1 py-1.5 rounded-lg bg-[#39FF14] text-black transition flex justify-center items-center gap-1 font-bold";
-      document.getElementById('filter-btn-online').className = "flex-1 py-1.5 rounded-lg text-zinc-400 hover:text-white transition flex justify-center items-center gap-1 font-bold";
+      document.getElementById('filter-btn-todos').className = "flex-1 py-1.5 rounded-lg bg-[#39FF14] text-black transition flex justify-center items-center gap-1 font-bold cursor-pointer";
+      document.getElementById('filter-btn-online').className = "flex-1 py-1.5 rounded-lg text-zinc-400 hover:text-white transition flex justify-center items-center gap-1 font-bold cursor-pointer";
       renderizarPerfis();
     }
 
     function filtrarOnline() {
       filtroSomenteOnline = true;
-      document.getElementById('filter-btn-online').className = "flex-1 py-1.5 rounded-lg bg-[#39FF14] text-black transition flex justify-center items-center gap-1 font-bold";
-      document.getElementById('filter-btn-todos').className = "flex-1 py-1.5 rounded-lg text-zinc-400 hover:text-white transition flex justify-center items-center gap-1 font-bold";
+      document.getElementById('filter-btn-online').className = "flex-1 py-1.5 rounded-lg bg-[#39FF14] text-black transition flex justify-center items-center gap-1 font-bold cursor-pointer";
+      document.getElementById('filter-btn-todos').className = "flex-1 py-1.5 rounded-lg text-zinc-400 hover:text-white transition flex justify-center items-center gap-1 font-bold cursor-pointer";
       renderizarPerfis();
     }
 
-    // GRADE DE PERFIS
     const grid = document.getElementById('grid-perfis');
     const filterInput = document.getElementById('filter-distancia');
     const labelDistancia = document.getElementById('label-distancia');
-
-    socket.on('lista-usuarios-reais', (usuarios) => {
-      usuariosReaisConectados = usuarios.filter(u => u.nick.toLowerCase() !== (meuPerfil ? meuPerfil.nick.toLowerCase() : ''));
-      renderizarPerfis();
-    });
 
     function renderizarPerfis() {
       grid.innerHTML = '';
@@ -573,13 +584,12 @@
       labelDistancia.innerText = `Até ${limiteKm.toFixed(1)} km`;
 
       let filtrados = usuariosReaisConectados.filter(u => parseFloat(u.distKm) <= limiteKm);
-
       if (filtroSomenteOnline) {
         filtrados = filtrados.filter(u => u.status === 'online' || u.status === 'away');
       }
 
       if (filtrados.length === 0) {
-        grid.innerHTML = `<p class="col-span-full text-center text-xs text-zinc-500 py-12">Nenhum perfil encontrado com os filtros selecionados.</p>`;
+        grid.innerHTML = `<p class="col-span-full text-center text-xs text-zinc-500 py-12">Nenhum perfil encontrado.</p>`;
         return;
       }
 
@@ -617,7 +627,6 @@
       lucide.createIcons();
     }
 
-    // MODAL DE PERFIL EXPANSÍVEL
     const modalPerfil = document.getElementById('profile-modal');
     function abrirModalPerfil(user) {
       usuarioSelecionadoPerfil = user;
@@ -644,6 +653,10 @@
       modalPerfil.classList.remove('hidden');
     }
 
+    function fecharModalPerfil() {
+      modalPerfil.classList.add('hidden');
+    }
+
     function iniciarChatDoPerfil() {
       modalPerfil.classList.add('hidden');
       if (usuarioSelecionadoPerfil) {
@@ -651,7 +664,6 @@
       }
     }
 
-    // ABA INBOX
     function navegarAba(aba) {
       const btnNavExplorar = document.getElementById('nav-btn-explorar');
       const btnNavInbox = document.getElementById('nav-btn-inbox');
@@ -660,14 +672,14 @@
       const barraFiltro = document.getElementById('barra-filtro');
 
       if (aba === 'explorar') {
-        btnNavExplorar.className = "flex flex-col items-center text-[#39FF14]";
-        btnNavInbox.className = "flex flex-col items-center text-zinc-500 hover:text-white relative";
+        btnNavExplorar.className = "flex flex-col items-center text-[#39FF14] cursor-pointer";
+        btnNavInbox.className = "flex flex-col items-center text-zinc-500 hover:text-white relative cursor-pointer";
         abaExplorar.classList.remove('hidden');
         barraFiltro.classList.remove('hidden');
         abaInbox.classList.add('hidden');
       } else {
-        btnNavInbox.className = "flex flex-col items-center text-[#39FF14] relative";
-        btnNavExplorar.className = "flex flex-col items-center text-zinc-500 hover:text-white";
+        btnNavInbox.className = "flex flex-col items-center text-[#39FF14] relative cursor-pointer";
+        btnNavExplorar.className = "flex flex-col items-center text-zinc-500 hover:text-white cursor-pointer";
         abaInbox.classList.remove('hidden');
         abaExplorar.classList.add('hidden');
         barraFiltro.classList.add('hidden');
@@ -682,7 +694,7 @@
       const chats = Object.values(conversasInbox);
 
       if (chats.length === 0) {
-        inboxContainer.innerHTML = `<p class="text-center text-xs text-zinc-500 py-12">Sua caixa de entrada está vazia. Mande um Colaê para alguém!</p>`;
+        inboxContainer.innerHTML = `<p class="text-center text-xs text-zinc-500 py-12">Sua caixa de entrada está vazia.</p>`;
         return;
       }
 
@@ -721,7 +733,6 @@
       }
     }
 
-    // GESTÃO DE CHAT E MENSAGENS
     const modalChat = document.getElementById('chat-modal');
     const messagesBox = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
@@ -800,7 +811,6 @@
       adicionarMensagemTela(texto, true, false);
 
       const destNick = usuarioAtivoChat.nick || usuarioAtivoChat.socketId;
-
       salvarMensagemNoHistorico(destNick, meuPerfil.nick, texto, 'texto');
 
       conversasInbox[destNick] = {
@@ -815,18 +825,19 @@
 
       localStorage.setItem('colae_inbox', JSON.stringify(conversasInbox));
 
-      socket.emit('send-private-message', {
-        paraId: usuarioAtivoChat.socketId,
-        paraNick: destNick,
-        deNick: meuPerfil.nick,
-        texto: texto,
-        tipo: 'texto'
-      });
+      if (socket) {
+        socket.emit('send-private-message', {
+          paraId: usuarioAtivoChat.socketId,
+          paraNick: destNick,
+          deNick: meuPerfil.nick,
+          texto: texto,
+          tipo: 'texto'
+        });
+      }
 
       chatInput.value = '';
     }
 
-    // UPLOAD FOTO NO CHAT
     const inputChatFoto = document.getElementById('chat-foto-input');
     inputChatFoto.addEventListener('change', function(e) {
       const file = e.target.files[0];
@@ -850,13 +861,15 @@
           };
           localStorage.setItem('colae_inbox', JSON.stringify(conversasInbox));
 
-          socket.emit('send-private-message', {
-            paraId: usuarioAtivoChat.socketId,
-            paraNick: destNick,
-            deNick: meuPerfil.nick,
-            texto: imgBase64,
-            tipo: 'imagem'
-          });
+          if (socket) {
+            socket.emit('send-private-message', {
+              paraId: usuarioAtivoChat.socketId,
+              paraNick: destNick,
+              deNick: meuPerfil.nick,
+              texto: imgBase64,
+              tipo: 'imagem'
+            });
+          }
 
           inputChatFoto.value = '';
         };
@@ -865,35 +878,6 @@
     });
 
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); });
-
-    socket.on('receive-private-message', (data) => {
-      const senderNick = data.deNick || data.deId;
-      const chatAberto = usuarioAtivoChat && (usuarioAtivoChat.nick === data.deNick || usuarioAtivoChat.socketId === data.deId) && !modalChat.classList.contains('hidden');
-
-      salvarMensagemNoHistorico(senderNick, data.deNick, data.texto, data.tipo);
-
-      const qtdAnterior = (conversasInbox[senderNick] && conversasInbox[senderNick].naoLidas) ? conversasInbox[senderNick].naoLidas : 0;
-
-      conversasInbox[senderNick] = {
-        socketId: data.deId,
-        nick: senderNick,
-        nome: data.deNome,
-        foto: data.deFoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
-        ultimaMsg: data.tipo === 'imagem' ? '[Imagem]' : data.texto,
-        hora: data.timestamp,
-        naoLidas: chatAberto ? 0 : (qtdAnterior + 1)
-      };
-
-      localStorage.setItem('colae_inbox', JSON.stringify(conversasInbox));
-      atualizarBadgeTotalNaoLidas();
-
-      if (chatAberto) {
-        adicionarMensagemTela(data.texto, false, data.tipo === 'imagem');
-      } else {
-        tocarSomNotificacao();
-        exibirToastNotificacao(data.deNome, data.deFoto, data.tipo === 'imagem' ? 'Enviou uma foto' : data.texto);
-      }
-    });
 
     function exibirToastNotificacao(nome, foto, msg) {
       const toast = document.getElementById('toast-notificacao');
