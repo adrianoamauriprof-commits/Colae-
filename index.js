@@ -4,58 +4,140 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+
+const io = new Server(server, { 
+  cors: { origin: "*" },
+  maxHttpBufferSize: 1e7 // 10MB para imagens em Base64
+});
 
 app.use(express.static('public'));
 
-// Base global de usuários cadastrados no servidor
-let baseUsuarios = {};
+let contasCadastradas = {};
+let socketsConectados = {};
 
 io.on('connection', (socket) => {
-  console.log('Novo cliente conectado:', socket.id);
+  console.log('Cliente conectado:', socket.id);
 
-  // Envia a lista existente assim que o celular conecta
-  socket.emit('lista-usuarios-reais', Object.values(baseUsuarios));
+  socket.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
+    const { senha, ...perfilPublico } = u;
+    return perfilPublico;
+  }));
 
-  // Registrar ou atualizar conta na base global
-  socket.on('registrar-usuario', (dados) => {
+  // EVENTO DE CADASTRO
+  socket.on('solicitar-cadastro', (dados) => {
     if (!dados || !dados.nick) return;
-
     const nickKey = dados.nick.toLowerCase();
 
-    baseUsuarios[nickKey] = {
+    if (contasCadastradas[nickKey]) {
+      socket.emit('resposta-cadastro', { sucesso: false, erro: 'Este nickname já está em uso!' });
+      return;
+    }
+
+    const novoUsuario = {
       nick: dados.nick,
+      senha: dados.senha,
       nome: dados.nome,
-      idade: dados.idade,
-      sexo: dados.sexo,
+      email: dados.email ? dados.email.toLowerCase() : "",
+      idade: dados.idade || 18,
+      sexo: dados.sexo || "Outro",
       foto: dados.foto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
       bio: dados.bio || "",
       altura: dados.altura || "",
       procura: dados.procura || "Trocar uma ideia",
       status: 'online',
       socketId: socket.id,
-      distKm: dados.distKm || (Math.random() * 4.5 + 0.1).toFixed(2)
+      distKm: (Math.random() * 4.5 + 0.1).toFixed(2)
     };
 
-    socket.nickKey = nickKey;
+    contasCadastradas[nickKey] = novoUsuario;
+    socketsConectados[socket.id] = nickKey;
 
-    // Notifica todos os usuários conectados sobre a lista atualizada
-    io.emit('lista-usuarios-reais', Object.values(baseUsuarios));
+    const { senha, ...perfilPublico } = novoUsuario;
+    socket.emit('resposta-cadastro', { sucesso: true, usuario: perfilPublico });
+
+    io.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
+      const { senha, ...p } = u;
+      return p;
+    }));
   });
 
-  // Atualização de Status (Online / Ausente)
-  socket.on('change-status', (novoStatus) => {
-    if (socket.nickKey && baseUsuarios[socket.nickKey]) {
-      baseUsuarios[socket.nickKey].status = novoStatus;
-      io.emit('lista-usuarios-reais', Object.values(baseUsuarios));
+  // EVENTO DE LOGIN
+  socket.on('solicitar-login', (dados) => {
+    if (!dados || !dados.nick) return;
+    const nickKey = dados.nick.toLowerCase();
+    const conta = contasCadastradas[nickKey];
+
+    if (!conta) {
+      socket.emit('resposta-login', { sucesso: false, erro: 'Nickname não cadastrado!' });
+      return;
+    }
+
+    if (conta.senha !== dados.senha) {
+      socket.emit('resposta-login', { sucesso: false, erro: 'Senha incorreta!' });
+      return;
+    }
+
+    conta.status = 'online';
+    conta.socketId = socket.id;
+    socketsConectados[socket.id] = nickKey;
+
+    const { senha, ...perfilPublico } = conta;
+    socket.emit('resposta-login', { sucesso: true, usuario: perfilPublico });
+
+    io.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
+      const { senha, ...p } = u;
+      return p;
+    }));
+  });
+
+  // RECUPERAÇÃO DE SENHA VIA E-MAIL
+  socket.on('solicitar-codigo-email', (email) => {
+    const emailProc = (email || '').toLowerCase();
+    const conta = Object.values(contasCadastradas).find(u => u.email === emailProc);
+
+    if (!conta) {
+      socket.emit('resposta-codigo-email', { sucesso: false, erro: 'Nenhuma conta cadastrada com este e-mail!' });
+      return;
+    }
+
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    conta.codigoRecuperacao = codigo;
+
+    socket.emit('resposta-codigo-email', { sucesso: true, codigo: codigo, email: emailProc });
+  });
+
+  socket.on('solicitar-redefinicao-senha', (dados) => {
+    const emailProc = (dados.email || '').toLowerCase();
+    const conta = Object.values(contasCadastradas).find(u => u.email === emailProc);
+
+    if (conta && conta.codigoRecuperacao === dados.codigo) {
+      conta.senha = dados.novaSenha;
+      delete conta.codigoRecuperacao;
+      const { senha, ...perfilPublico } = conta;
+      socket.emit('resposta-redefinicao-senha', { sucesso: true, usuario: perfilPublico });
+    } else {
+      socket.emit('resposta-redefinicao-senha', { sucesso: false, erro: 'Código de verificação inválido!' });
     }
   });
 
-  // Envio de mensagem privada
+  // MUDANÇA DE STATUS
+  socket.on('change-status', (novoStatus) => {
+    const nickKey = socketsConectados[socket.id];
+    if (nickKey && contasCadastradas[nickKey]) {
+      contasCadastradas[nickKey].status = novoStatus;
+      io.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
+        const { senha, ...p } = u;
+        return p;
+      }));
+    }
+  });
+
+  // MENSAGEM PRIVADA
   socket.on('send-private-message', (data) => {
-    const remetente = socket.nickKey ? baseUsuarios[socket.nickKey] : null;
+    const remetenteNickKey = socketsConectados[socket.id];
+    const remetente = remetenteNickKey ? contasCadastradas[remetenteNickKey] : null;
     const destNickKey = (data.paraNick || '').toLowerCase();
-    const destinatario = baseUsuarios[destNickKey];
+    const destinatario = contasCadastradas[destNickKey];
 
     if (destinatario && destinatario.socketId) {
       io.to(destinatario.socketId).emit('receive-private-message', {
@@ -70,13 +152,18 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Ao desconectar, mantemos o cadastro na base com status offline
+  // DESCONEXÃO
   socket.on('disconnect', () => {
-    if (socket.nickKey && baseUsuarios[socket.nickKey]) {
-      baseUsuarios[socket.nickKey].status = 'offline';
-      baseUsuarios[socket.nickKey].socketId = null;
+    const nickKey = socketsConectados[socket.id];
+    if (nickKey && contasCadastradas[nickKey]) {
+      contasCadastradas[nickKey].status = 'offline';
+      contasCadastradas[nickKey].socketId = null;
     }
-    io.emit('lista-usuarios-reais', Object.values(baseUsuarios));
+    delete socketsConectados[socket.id];
+    io.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
+      const { senha, ...p } = u;
+      return p;
+    }));
   });
 });
 
