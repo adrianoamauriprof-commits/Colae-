@@ -300,6 +300,9 @@
           <p id="chat-user-distancia" class="text-[11px] text-[#39FF14]">Perto de você</p>
         </div>
       </div>
+      <button type="button" onclick="apagarConversaAtual()" title="Apagar Conversa" class="p-2 text-zinc-400 hover:text-red-400 transition cursor-pointer">
+        <i data-lucide="trash-2" class="w-5 h-5"></i>
+      </button>
     </div>
 
     <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-black">
@@ -366,10 +369,33 @@
       }
     }
 
+    function compressImagePerfil(file, callback) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = function(event) {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = function() {
+          let width = img.width;
+          let height = img.height;
+          const max = 300;
+          if (width > height) { if (width > max) { height *= max / width; width = max; } }
+          else { if (height > max) { width *= max / height; height = max; } }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          callback(canvas.toDataURL('image/jpeg', 0.6));
+        };
+      };
+    }
+
     document.getElementById('cad-foto-input').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
-        compressImage(file, 400, 400, 0.7, (base64) => {
+        compressImagePerfil(file, (base64) => {
           fotoPerfilCadastradaBase64 = base64;
           document.getElementById('cad-foto-preview').src = fotoPerfilCadastradaBase64;
         });
@@ -509,7 +535,6 @@
       location.reload();
     }
 
-    // STATUS
     let tempoInatividade;
     function resetarInatividade() {
       clearTimeout(tempoInatividade);
@@ -525,7 +550,6 @@
       else resetarInatividade();
     });
 
-    // FILTROS
     function filtrarTodos() {
       filtroSomenteOnline = false;
       document.getElementById('filter-btn-todos').className = "flex-1 py-1.5 rounded-lg bg-[#39FF14] text-black transition flex justify-center items-center gap-1 font-bold cursor-pointer";
@@ -540,7 +564,6 @@
       renderizarPerfis();
     }
 
-    // GRADE DE PERFIS
     const grid = document.getElementById('grid-perfis');
     const filterInput = document.getElementById('filter-distancia');
     const labelDistancia = document.getElementById('label-distancia');
@@ -600,7 +623,6 @@
       lucide.createIcons();
     }
 
-    // MODAL DE PERFIL EXPANSÍVEL
     const modalPerfil = document.getElementById('profile-modal');
     function abrirModalPerfil(user) {
       usuarioSelecionadoPerfil = user;
@@ -638,7 +660,6 @@
       }
     }
 
-    // ABA INBOX
     function navegarAba(aba) {
       const btnNavExplorar = document.getElementById('nav-btn-explorar');
       const btnNavInbox = document.getElementById('nav-btn-inbox');
@@ -675,25 +696,30 @@
 
       chats.forEach(chat => {
         const item = document.createElement('div');
-        item.className = "flex items-center justify-between p-3 bg-zinc-950 border border-zinc-900 rounded-xl cursor-pointer hover:border-[#39FF14] transition";
+        item.className = "flex items-center justify-between p-3 bg-zinc-950 border border-zinc-900 rounded-xl cursor-pointer hover:border-[#39FF14] transition group";
         item.innerHTML = `
-          <div class="flex items-center space-x-3">
-            <div class="relative w-12 h-12 rounded-full overflow-hidden border border-zinc-800">
+          <div class="flex items-center space-x-3 flex-1 overflow-hidden" onclick="abrirChat({nick: '${chat.nick}', nome: '${chat.nome}', foto: '${chat.foto}', socketId: '${chat.socketId || ''}'}, 'Perto de você')">
+            <div class="relative w-12 h-12 rounded-full overflow-hidden border border-zinc-800 flex-shrink-0">
               <img src="${chat.foto}" class="w-full h-full object-cover">
             </div>
-            <div>
-              <h4 class="font-bold text-sm text-white">${chat.nome}</h4>
-              <p class="text-xs text-zinc-400 truncate max-w-[180px]">${chat.ultimaMsg}</p>
+            <div class="overflow-hidden flex-1">
+              <h4 class="font-bold text-sm text-white truncate">${chat.nome}</h4>
+              <p class="text-xs text-zinc-400 truncate">${chat.ultimaMsg}</p>
             </div>
           </div>
-          <div class="text-right">
-            <span class="text-[10px] text-zinc-500">${chat.hora}</span>
-            ${chat.naoLidas > 0 ? `<span class="block ml-auto text-[10px] bg-[#39FF14] text-black font-black px-1.5 py-0.5 rounded-full text-center mt-1 w-fit">${chat.naoLidas}</span>` : ''}
+          <div class="flex items-center space-x-2 pl-2">
+            <div class="text-right">
+              <span class="text-[10px] text-zinc-500 block">${chat.hora}</span>
+              ${chat.naoLidas > 0 ? `<span class="inline-block text-[10px] bg-[#39FF14] text-black font-black px-1.5 py-0.5 rounded-full text-center mt-1">${chat.naoLidas}</span>` : ''}
+            </div>
+            <button type="button" onclick="event.stopPropagation(); apagarConversaPorNick('${chat.nick}')" title="Apagar Conversa" class="p-2 text-zinc-500 hover:text-red-400 transition cursor-pointer">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
           </div>
         `;
-        item.addEventListener('click', () => abrirChat(chat, "Perto de você"));
         inboxContainer.appendChild(item);
       });
+      lucide.createIcons();
     }
 
     function atualizarBadgeTotalNaoLidas() {
@@ -708,7 +734,6 @@
       }
     }
 
-    // GESTÃO DE CHAT E MENSAGENS
     const modalChat = document.getElementById('chat-modal');
     const messagesBox = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
@@ -722,7 +747,7 @@
       if (!meuPerfil) return alert('Faça login primeiro!');
       usuarioAtivoChat = targetUser;
       
-      const destNick = (targetUser.nick || targetUser.socketId || '').toLowerCase();
+      const destNick = (targetUser.nick || '').toLowerCase();
       const keyConversa = getChatKey(meuPerfil.nick, destNick);
 
       if (conversasInbox[destNick]) {
@@ -750,6 +775,38 @@
       renderizarInbox();
     }
 
+    function apagarConversaAtual() {
+      if (!usuarioAtivoChat || !meuPerfil) return;
+      if (confirm("Deseja realmente apagar esta conversa?")) {
+        const destNick = (usuarioAtivoChat.nick || '').toLowerCase();
+        const keyConversa = getChatKey(meuPerfil.nick, destNick);
+
+        delete conversasInbox[destNick];
+        delete historicoMensagens[keyConversa];
+
+        localStorage.setItem('colae_inbox', JSON.stringify(conversasInbox));
+        localStorage.setItem('colae_historico_msgs', JSON.stringify(historicoMensagens));
+
+        atualizarBadgeTotalNaoLidas();
+        fecharChat();
+      }
+    }
+
+    function apagarConversaPorNick(destNick) {
+      if (confirm("Deseja realmente apagar esta conversa?")) {
+        const keyConversa = getChatKey(meuPerfil.nick, destNick);
+
+        delete conversasInbox[destNick];
+        delete historicoMensagens[keyConversa];
+
+        localStorage.setItem('colae_inbox', JSON.stringify(conversasInbox));
+        localStorage.setItem('colae_historico_msgs', JSON.stringify(historicoMensagens));
+
+        atualizarBadgeTotalNaoLidas();
+        renderizarInbox();
+      }
+    }
+
     function adicionarMensagemTela(conteudo, eMinha = true, eImagem = false) {
       const msgDiv = document.createElement('div');
       msgDiv.className = `flex ${eMinha ? 'justify-end' : 'justify-start'}`;
@@ -774,9 +831,16 @@
       messagesBox.scrollTop = messagesBox.scrollHeight;
     }
 
+    // SALVA NO HISTÓRICO APENAS SE NÃO FOR DUPLICADA EXATA DA ÚLTIMA MENSAGEM
     function salvarMensagemNoHistorico(destNick, deNick, texto, tipo = 'texto') {
       const keyConversa = getChatKey(meuPerfil.nick, destNick);
       if (!historicoMensagens[keyConversa]) historicoMensagens[keyConversa] = [];
+      
+      const ultima = historicoMensagens[keyConversa][historicoMensagens[keyConversa].length - 1];
+      if (ultima && ultima.texto === texto && ultima.deNick.toLowerCase() === deNick.toLowerCase()) {
+        return; // Evita salvar duplicada consecutiva
+      }
+
       historicoMensagens[keyConversa].push({ deNick, texto, tipo });
       localStorage.setItem('colae_historico_msgs', JSON.stringify(historicoMensagens));
     }
@@ -787,7 +851,7 @@
 
       adicionarMensagemTela(texto, true, false);
 
-      const destNick = (usuarioAtivoChat.nick || usuarioAtivoChat.socketId || '').toLowerCase();
+      const destNick = (usuarioAtivoChat.nick || '').toLowerCase();
       salvarMensagemNoHistorico(destNick, meuPerfil.nick, texto, 'texto');
 
       conversasInbox[destNick] = {
@@ -813,8 +877,7 @@
       chatInput.value = '';
     }
 
-    // FUNÇÃO AUXILIAR DE COMPRESSÃO DE IMAGEM PARA EVITAR TRAVAMENTO DE REDE
-    function compressImage(file, maxWidth, maxHeight, quality, callback) {
+    function compressImageChat(file, callback) {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = function(event) {
@@ -823,40 +886,28 @@
         img.onload = function() {
           let width = img.width;
           let height = img.height;
-
-          if (width > height) {
-            if (width > maxWidth) {
-              height *= maxWidth / width;
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width *= maxHeight / height;
-              height = maxHeight;
-            }
-          }
+          const max = 500;
+          if (width > height) { if (width > max) { height *= max / width; width = max; } }
+          else { if (height > max) { width *= max / height; height = max; } }
 
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          
-          const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-          callback(compressedBase64);
+          callback(canvas.toDataURL('image/jpeg', 0.7));
         };
       };
     }
 
-    // UPLOAD FOTO NO CHAT COM COMPRESSÃO AUTOMÁTICA
     const inputChatFoto = document.getElementById('chat-foto-input');
     inputChatFoto.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file && usuarioAtivoChat) {
-        compressImage(file, 600, 600, 0.75, function(imgBase64) {
+        compressImageChat(file, function(imgBase64) {
           adicionarMensagemTela(imgBase64, true, true);
 
-          const destNick = (usuarioAtivoChat.nick || usuarioAtivoChat.socketId || '').toLowerCase();
+          const destNick = (usuarioAtivoChat.nick || '').toLowerCase();
           salvarMensagemNoHistorico(destNick, meuPerfil.nick, imgBase64, 'imagem');
 
           conversasInbox[destNick] = {
@@ -885,10 +936,18 @@
 
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); });
 
-    // RECEBIMENTO DE MENSAGENS E FOTOS COM TRATAMENTO DE TIPO EXPLICITO
     socket.on('receive-private-message', (data) => {
-      const senderNick = (data.deNick || data.deId || '').toLowerCase();
-      const chatAberto = usuarioAtivoChat && ((usuarioAtivoChat.nick || '').toLowerCase() === senderNick || usuarioAtivoChat.socketId === data.deId) && !modalChat.classList.contains('hidden');
+      const senderNick = (data.deNick || '').toLowerCase();
+      const chatAberto = usuarioAtivoChat && ((usuarioAtivoChat.nick || '').toLowerCase() === senderNick) && !modalChat.classList.contains('hidden');
+
+      // Verifica no histórico se a última mensagem recebida é exatamente idêntica para evitar duplicidade
+      const keyConversa = getChatKey(meuPerfil.nick, senderNick);
+      const ultimas = historicoMensagens[keyConversa] || [];
+      const ultimaMsg = ultimas[ultimas.length - 1];
+
+      if (ultimaMsg && ultimaMsg.texto === data.texto && ultimaMsg.deNick.toLowerCase() === senderNick) {
+        return; // Ignora se for duplicada enviada em broadcast duplo
+      }
 
       salvarMensagemNoHistorico(senderNick, data.deNick, data.texto, data.tipo || 'texto');
 
