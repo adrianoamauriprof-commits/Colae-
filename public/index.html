@@ -49,7 +49,7 @@
         <button id="tab-btn-login" type="button" class="flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition font-bold">Já tenho conta</button>
       </div>
 
-      <!-- CADASTRO -->
+      <!-- FORMULÁRIO CADASTRO -->
       <form id="form-cadastro" class="w-full space-y-3">
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Nome de Exibição</label>
@@ -110,7 +110,7 @@
         </button>
       </form>
 
-      <!-- LOGIN -->
+      <!-- FORMULÁRIO LOGIN -->
       <form id="form-login" class="w-full space-y-3 hidden">
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Seu Nickname</label>
@@ -144,9 +144,8 @@
     </div>
   </header>
 
-  <!-- BARRA DE FILTROS: DISTÂNCIA + FILTRO DE STATUS (ONLINE/TODOS) -->
+  <!-- FILTROS -->
   <div id="barra-filtro" class="bg-zinc-950 px-4 py-3 text-xs border-b border-zinc-900 space-y-3">
-    <!-- FILTRO APENAS ONLINE OU TODOS -->
     <div class="flex bg-zinc-900 rounded-xl p-1 border border-zinc-800 font-bold">
       <button id="filter-btn-todos" type="button" class="flex-1 py-1.5 rounded-lg bg-[#39FF14] text-black transition flex justify-center items-center gap-1">
         <i data-lucide="users" class="w-3.5 h-3.5"></i> Todos os Usuários
@@ -156,7 +155,6 @@
       </button>
     </div>
 
-    <!-- RAIO DE DISTÂNCIA -->
     <div class="space-y-1">
       <div class="flex justify-between items-center">
         <span class="text-zinc-400 flex items-center gap-1">
@@ -277,9 +275,9 @@
     let meuPerfil = null;
     let usuarioAtivoChat = null;
     let usuarioSelecionadoPerfil = null;
-    let filtroSomenteOnline = false; // Alterna entre Todos e Apenas Online
+    let filtroSomenteOnline = false;
 
-    let usuariosReaisConectados = JSON.parse(localStorage.getItem('colae_cache_perfis') || '[]');
+    let usuariosReaisConectados = [];
     let conversasInbox = JSON.parse(localStorage.getItem('colae_inbox') || '{}');
     let historicoMensagens = JSON.parse(localStorage.getItem('colae_historico_msgs') || '{}');
 
@@ -300,7 +298,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
       atualizarBadgeTotalNaoLidas();
-      renderizarPerfis();
     });
 
     socket.on('connect', () => {
@@ -351,11 +348,6 @@
       let nick = document.getElementById('cad-nick').value.trim().toLowerCase();
       if (!nick.startsWith('@')) nick = '@' + nick;
 
-      if (localStorage.getItem(`colae_account_${nick}`)) {
-        alert("Este nickname já está em uso!");
-        return;
-      }
-
       const novoUsuario = {
         nome: document.getElementById('cad-nome').value.trim(),
         idade: document.getElementById('cad-idade').value,
@@ -367,7 +359,9 @@
         foto: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80"
       };
 
+      // Salva a conta no cadastro local para consultas de login
       localStorage.setItem(`colae_account_${nick}`, JSON.stringify({ ...novoUsuario, senha: document.getElementById('cad-senha').value }));
+      
       iniciarSessao(novoUsuario);
     });
 
@@ -408,7 +402,7 @@
       else resetarInatividade();
     });
 
-    // FILTRO DE STATUS (TODOS VS APENAS ONLINE)
+    // BOTÕES DE FILTRO (TODOS VS APENAS ONLINE)
     const btnFilterTodos = document.getElementById('filter-btn-todos');
     const btnFilterOnline = document.getElementById('filter-btn-online');
 
@@ -432,11 +426,8 @@
     const labelDistancia = document.getElementById('label-distancia');
 
     socket.on('lista-usuarios-reais', (usuarios) => {
-      const novosPerfis = usuarios.filter(u => u.nick.toLowerCase() !== (meuPerfil ? meuPerfil.nick.toLowerCase() : ''));
-      if (novosPerfis.length > 0) {
-        usuariosReaisConectados = novosPerfis;
-        localStorage.setItem('colae_cache_perfis', JSON.stringify(usuariosReaisConectados));
-      }
+      // Recebe a lista global enviada pelo backend
+      usuariosReaisConectados = usuarios.filter(u => u.nick.toLowerCase() !== (meuPerfil ? meuPerfil.nick.toLowerCase() : ''));
       renderizarPerfis();
     });
 
@@ -461,8 +452,8 @@
         card.className = "relative group cursor-pointer overflow-hidden rounded-xl bg-zinc-950 border border-zinc-900 shadow-md transition hover:border-[#39FF14]";
         
         let statusCor = 'bg-zinc-600'; // Offline por padrão (cinza)
-        if (user.status === 'online') statusCor = 'bg-[#39FF14]'; // Online (verde)
-        else if (user.status === 'away') statusCor = 'bg-yellow-400'; // Ausente (amarelo)
+        if (user.status === 'online') statusCor = 'bg-[#39FF14]';
+        else if (user.status === 'away') statusCor = 'bg-yellow-400';
 
         card.innerHTML = `
           <div class="aspect-square w-full overflow-hidden relative">
@@ -598,7 +589,7 @@
       }
     }
 
-    // CHAT & PERSISTÊNCIA DE MENSAGENS
+    // GESTÃO DE CHAT E MENSAGENS
     const modalChat = document.getElementById('chat-modal');
     const messagesBox = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
@@ -723,7 +714,6 @@
     document.getElementById('btn-enviar').addEventListener('click', enviarMensagem);
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); });
 
-    // RECEBIMENTO DE MENSAGENS EM TEMPO REAL
     socket.on('receive-private-message', (data) => {
       const senderNick = data.deNick || data.deId;
       const chatAberto = usuarioAtivoChat && (usuarioAtivoChat.nick === data.deNick || usuarioAtivoChat.socketId === data.deId) && !modalChat.classList.contains('hidden');
