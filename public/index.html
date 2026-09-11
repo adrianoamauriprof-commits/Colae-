@@ -369,12 +369,10 @@
     document.getElementById('cad-foto-input').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          fotoPerfilCadastradaBase64 = evt.target.result;
+        compressImage(file, 400, 400, 0.7, (base64) => {
+          fotoPerfilCadastradaBase64 = base64;
           document.getElementById('cad-foto-preview').src = fotoPerfilCadastradaBase64;
-        };
-        reader.readAsDataURL(file);
+        });
       }
     });
 
@@ -815,14 +813,47 @@
       chatInput.value = '';
     }
 
-    // UPLOAD FOTO NO CHAT (COM ENVIO EXPLÍCITO DO TIPO 'imagem')
+    // FUNÇÃO AUXILIAR DE COMPRESSÃO DE IMAGEM PARA EVITAR TRAVAMENTO DE REDE
+    function compressImage(file, maxWidth, maxHeight, quality, callback) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = function(event) {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = function() {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height *= maxWidth / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width *= maxHeight / height;
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+          callback(compressedBase64);
+        };
+      };
+    }
+
+    // UPLOAD FOTO NO CHAT COM COMPRESSÃO AUTOMÁTICA
     const inputChatFoto = document.getElementById('chat-foto-input');
     inputChatFoto.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file && usuarioAtivoChat) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          const imgBase64 = evt.target.result;
+        compressImage(file, 600, 600, 0.75, function(imgBase64) {
           adicionarMensagemTela(imgBase64, true, true);
 
           const destNick = (usuarioAtivoChat.nick || usuarioAtivoChat.socketId || '').toLowerCase();
@@ -848,20 +879,18 @@
           });
 
           inputChatFoto.value = '';
-        };
-        reader.readAsDataURL(file);
+        });
       }
     });
 
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); });
 
-    // RECEBIMENTO DE MENSAGENS E FOTOS COM ATUALIZAÇÃO IMEDIATA DA PRÉVIA (INBOX)
+    // RECEBIMENTO DE MENSAGENS E FOTOS COM TRATAMENTO DE TIPO EXPLICITO
     socket.on('receive-private-message', (data) => {
       const senderNick = (data.deNick || data.deId || '').toLowerCase();
       const chatAberto = usuarioAtivoChat && ((usuarioAtivoChat.nick || '').toLowerCase() === senderNick || usuarioAtivoChat.socketId === data.deId) && !modalChat.classList.contains('hidden');
 
-      const textoOuFoto = data.tipo === 'imagem' ? data.texto : data.texto;
-      salvarMensagemNoHistorico(senderNick, data.deNick, textoOuFoto, data.tipo || 'texto');
+      salvarMensagemNoHistorico(senderNick, data.deNick, data.texto, data.tipo || 'texto');
 
       const qtdAnterior = (conversasInbox[senderNick] && conversasInbox[senderNick].naoLidas) ? conversasInbox[senderNick].naoLidas : 0;
 
@@ -878,13 +907,12 @@
       localStorage.setItem('colae_inbox', JSON.stringify(conversasInbox));
       atualizarBadgeTotalNaoLidas();
 
-      // Se a aba Inbox estiver aberta, atualiza a lista visualmente na hora
       if (!document.getElementById('aba-inbox').classList.contains('hidden')) {
         renderizarInbox();
       }
 
       if (chatAberto) {
-        adicionarMensagemTela(textoOuFoto, false, data.tipo === 'imagem');
+        adicionarMensagemTela(data.texto, false, data.tipo === 'imagem');
       } else {
         tocarSomNotificacao();
         exibirToastNotificacao(data.deNome, data.deFoto, data.tipo === 'imagem' ? 'Enviou uma foto' : data.texto);
