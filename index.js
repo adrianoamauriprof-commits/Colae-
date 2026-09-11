@@ -1,6 +1,8 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -12,7 +14,29 @@ const io = new Server(server, {
 
 app.use(express.static('public'));
 
-let contasCadastradas = {}; 
+// ARQUIVO DE PERSISTÊNCIA PARA NÃO PERDER CONTAS AO REINICIAR O SERVER
+const ARQUIVO_DADOS = path.join(__dirname, 'dados.json');
+
+let contasCadastradas = {};
+
+// Carrega contas salvas anteriormente, se existirem
+if (fs.existsSync(ARQUIVO_DADOS)) {
+  try {
+    const dadosSalvos = fs.readFileSync(ARQUIVO_DADOS, 'utf8');
+    contasCadastradas = JSON.parse(dadosSalvos);
+    console.log('Contas carregadas do arquivo com sucesso:', Object.keys(contasCadastradas).length);
+  } catch (e) {
+    console.error('Erro ao carregar dados salvos:', e);
+  }
+}
+
+function salvarDadosNoDisco() {
+  try {
+    fs.writeFileSync(ARQUIVO_DADOS, JSON.stringify(contasCadastradas, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Erro ao salvar dados no disco:', e);
+  }
+}
 
 io.on('connection', (socket) => {
   console.log('Conectado:', socket.id);
@@ -22,7 +46,6 @@ io.on('connection', (socket) => {
     return perfilPublico;
   }));
 
-  // CADASTRO / REGISTRO / LOGIN
   const salvarOuAtualizarUsuario = (dados) => {
     if (!dados || !dados.nick) return null;
     let nickKey = dados.nick.trim().toLowerCase();
@@ -36,7 +59,9 @@ io.on('connection', (socket) => {
         email: (dados.email || '').toLowerCase(),
         idade: dados.idade || 18,
         sexo: dados.sexo || 'Outro',
-        foto: dados.foto || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80',
+        orientacao: dados.orientacao || 'Heterossexual',
+        papel: dados.papel || 'Versátil',
+        foto: dados.foto || '',
         bio: dados.bio || '',
         altura: dados.altura || '',
         procura: dados.procura || 'Trocar uma ideia',
@@ -47,14 +72,21 @@ io.on('connection', (socket) => {
     } else {
       contasCadastradas[nickKey].socketId = socket.id;
       contasCadastradas[nickKey].status = 'online';
-      if (dados.foto && dados.foto.startsWith('data:image')) {
+      if (dados.foto !== undefined) {
         contasCadastradas[nickKey].foto = dados.foto;
       }
       if (dados.senha) contasCadastradas[nickKey].senha = dados.senha;
       if (dados.nome) contasCadastradas[nickKey].nome = dados.nome;
+      if (dados.idade) contasCadastradas[nickKey].idade = dados.idade;
+      if (dados.sexo) contasCadastradas[nickKey].sexo = dados.sexo;
+      if (dados.orientacao) contasCadastradas[nickKey].orientacao = dados.orientacao;
+      if (dados.papel) contasCadastradas[nickKey].papel = dados.papel;
+      if (dados.bio !== undefined) contasCadastradas[nickKey].bio = dados.bio;
+      if (dados.altura !== undefined) contasCadastradas[nickKey].altura = dados.altura;
+      if (dados.procura) contasCadastradas[nickKey].procura = dados.procura;
     }
 
-    // Coloca o socket na sala exclusiva do próprio nickname para entrega garantida
+    salvarDadosNoDisco();
     socket.join(nickKey);
     return contasCadastradas[nickKey];
   };
@@ -104,7 +136,11 @@ io.on('connection', (socket) => {
       return;
     }
 
-    salvarOuAtualizarUsuario(dados);
+    conta.socketId = socket.id;
+    conta.status = 'online';
+    salvarDadosNoDisco();
+
+    socket.join(nickKey);
     const { senha, ...perfilPublico } = conta;
     socket.emit('resposta-login', { sucesso: true, usuario: perfilPublico });
 
@@ -118,7 +154,6 @@ io.on('connection', (socket) => {
     const emailProc = (email || '').toLowerCase();
     const conta = Object.values(contasCadastradas).find(u => u.email === emailProc);
     const codigo = '123456';
-    if (conta) conta.codigoRecuperacao = codigo;
     socket.emit('resposta-codigo-email', { sucesso: true, codigo: codigo, email: emailProc });
   });
 
@@ -128,6 +163,7 @@ io.on('connection', (socket) => {
 
     if (conta) {
       conta.senha = dados.novaSenha;
+      salvarDadosNoDisco();
       const { senha, ...perfilPublico } = conta;
       socket.emit('resposta-redefinicao-senha', { sucesso: true, usuario: perfilPublico });
     } else {
@@ -146,7 +182,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ROTEAMENTO DIRETO E BLINDADO POR SALA E SOCKET ID
   socket.on('send-private-message', (data) => {
     const remetente = Object.values(contasCadastradas).find(u => u.socketId === socket.id) || 
                       contasCadastradas[(data.deNick || '').toLowerCase()];
@@ -164,25 +199,24 @@ io.on('connection', (socket) => {
       deNick: remetente ? remetente.nick : (data.deNick || '@usuario'),
       deNome: remetente ? remetente.nome : 'Usuário',
       deFoto: remetente ? remetente.foto : '',
+      deSexo: remetente ? remetente.sexo : 'Outro',
       texto: data.texto,
       tipo: data.tipo || 'texto',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    // Envia tanto para o socketId direto quanto para a sala do nickname do destinatário
     if (destinatario) {
       if (destinatario.socketId) {
         io.to(destinatario.socketId).emit('receive-private-message', payloadMensagem);
       }
       io.to(destinatario.nick).emit('receive-private-message', payloadMensagem);
     } else if (destNickKey) {
-      // Fallback caso a conta esteja apenas na sessão do client
       io.to(destNickKey).emit('receive-private-message', payloadMensagem);
     }
   });
 
   socket.on('disconnect', () => {
-    const conta = Object.values(contasCadastradas).find(u => u.socketId === socket.id);
+    const conta = Object.values(contasCadastradas).liberado ? null : Object.values(contasCadastradas).find(u => u.socketId === socket.id);
     if (conta) {
       conta.status = 'offline';
       conta.socketId = null;
