@@ -7,7 +7,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, { 
   cors: { origin: "*" },
-  maxHttpBufferSize: 2e7 // Aumentado para 20MB para garantir folga com imagens
+  maxHttpBufferSize: 2e7 // 20MB
 });
 
 app.use(express.static('public'));
@@ -47,7 +47,8 @@ io.on('connection', (socket) => {
     } else {
       contasCadastradas[nickKey].socketId = socket.id;
       contasCadastradas[nickKey].status = 'online';
-      if (dados.foto && dados.foto.startsWith('data:image')) {
+      // Atualiza apenas se for uma string de imagem válida e compacta
+      if (dados.foto && typeof dados.foto === 'string' && dados.foto.startsWith('data:image')) {
         contasCadastradas[nickKey].foto = dados.foto;
       }
       if (dados.nome) contasCadastradas[nickKey].nome = dados.nome;
@@ -167,7 +168,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ROTEAMENTO UNIVERSAL DIRETO PARA TEXTO E FOTOS
+  // ROTEAMENTO DE MENSAGENS E FOTOS BLINDADO
   socket.on('send-private-message', (data) => {
     const remetenteNickKey = socketsConectados[socket.id];
     let remetente = remetenteNickKey ? contasCadastradas[remetenteNickKey] : null;
