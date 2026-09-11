@@ -51,7 +51,6 @@
 
       <!-- FORMULÁRIO CADASTRO -->
       <form id="form-cadastro" class="w-full space-y-3">
-        <!-- FOTO DE PERFIL DA GALERIA -->
         <div class="flex flex-col items-center space-y-2">
           <div class="relative w-20 h-20 rounded-full bg-zinc-900 border-2 border-[#39FF14] overflow-hidden flex items-center justify-center group cursor-pointer" onclick="document.getElementById('cad-foto-input').click()">
             <img id="cad-foto-preview" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover">
@@ -69,7 +68,7 @@
         </div>
 
         <div>
-          <label class="text-xs text-zinc-400 font-medium block mb-1">E-mail (para recuperação de conta)</label>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">E-mail (para recuperação)</label>
           <input type="email" id="cad-email" required placeholder="seuemail@exemplo.com" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
         
@@ -98,7 +97,6 @@
           <input type="password" id="cad-senha" required placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
 
-        <!-- DETALHES DO PERFIL EXPANSÍVEL -->
         <div class="pt-2 border-t border-zinc-900 space-y-2">
           <p class="text-[11px] text-[#39FF14] font-bold uppercase tracking-wider">Perfil Expansível (Opcional)</p>
           <div>
@@ -122,7 +120,7 @@
           </div>
         </div>
 
-        <button type="submit" class="w-full neon-bg text-black font-bold py-3 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4">
+        <button type="submit" class="w-full neon-bg text-black font-bold py-3 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4 cursor-pointer">
           <span>Cadastrar no Colaê</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
@@ -141,7 +139,7 @@
         <div class="text-right">
           <button id="btn-esqueceu-senha" type="button" class="text-xs text-[#39FF14] hover:underline font-medium">Esqueceu a senha?</button>
         </div>
-        <button type="submit" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4">
+        <button type="submit" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4 cursor-pointer">
           <span>Entrar na Conta</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
@@ -152,9 +150,9 @@
         <h3 class="text-sm font-bold text-[#39FF14] text-center">Recuperar Acesso via E-mail</h3>
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Informe seu E-mail Cadastrado</label>
-          <input type="email" id="rec-email" required placeholder="seuemail@exemplo.com" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
+          <input type="email" id="rec-email" placeholder="seuemail@exemplo.com" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
-        <button id="btn-enviar-codigo" type="button" class="w-full bg-zinc-800 text-white font-bold py-2 rounded-xl text-xs hover:bg-zinc-700 transition">Enviar Código de Segurança</button>
+        <button id="btn-enviar-codigo-seg" type="button" class="w-full bg-zinc-800 text-white font-bold py-2 rounded-xl text-xs hover:bg-zinc-700 transition cursor-pointer">Enviar Código de Segurança</button>
 
         <div id="box-codigo-verificacao" class="space-y-3 hidden">
           <div>
@@ -165,7 +163,7 @@
             <label class="text-xs text-zinc-400 font-medium block mb-1">Nova Senha</label>
             <input type="password" id="rec-nova-senha" placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
           </div>
-          <button type="submit" class="w-full neon-bg text-black font-bold py-3 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2">
+          <button type="submit" class="w-full neon-bg text-black font-bold py-3 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 cursor-pointer">
             <span>Redefinir Senha e Entrar</span>
           </button>
         </div>
@@ -309,14 +307,13 @@
     </div>
 
     <div class="p-3 bg-zinc-950 border-t border-zinc-900 flex items-center space-x-2">
-      <!-- INPUT INVISÍVEL DE GALERIA PARA O CHAT -->
       <input type="file" id="chat-foto-input" accept="image/*" class="hidden">
       
-      <button id="btn-envio-foto" title="Escolher Imagem da Galeria" class="p-2.5 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-400 hover:text-[#39FF14] transition">
+      <button id="btn-envio-foto" type="button" title="Escolher Imagem da Galeria" class="p-2.5 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-400 hover:text-[#39FF14] transition">
         <i data-lucide="image" class="w-4 h-4"></i>
       </button>
       <input type="text" id="chat-input" placeholder="Manda um 'Colaê'..." class="flex-1 bg-zinc-900 text-sm text-white px-4 py-2.5 rounded-full border border-zinc-800 focus:outline-none focus:border-[#39FF14]">
-      <button id="btn-enviar" class="p-2.5 neon-bg rounded-full text-black hover:opacity-90 transition">
+      <button id="btn-enviar" type="button" class="p-2.5 neon-bg rounded-full text-black hover:opacity-90 transition">
         <i data-lucide="send" class="w-4 h-4"></i>
       </button>
     </div>
@@ -389,7 +386,7 @@
       btnTabLog.click();
     });
 
-    // UPLOAD FOTO DE PERFIL GALERIA
+    // UPLOAD FOTO GALERIA PREVIEW
     document.getElementById('cad-foto-input').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
@@ -424,7 +421,7 @@
       }
     });
 
-    // SUBMIT CADASTRO
+    // CADASTRO SUBMIT
     formCad.addEventListener('submit', (e) => {
       e.preventDefault();
       let nick = document.getElementById('cad-nick').value.trim().toLowerCase();
@@ -454,7 +451,7 @@
       }
     });
 
-    // SUBMIT LOGIN
+    // LOGIN SUBMIT
     formLog.addEventListener('submit', (e) => {
       e.preventDefault();
       let nick = document.getElementById('login-nick').value.trim().toLowerCase();
@@ -472,11 +469,14 @@
       }
     });
 
-    // SUBMIT RECUPERAÇÃO VIA SERVIDOR
+    // ENVIAR CÓDIGO RECUPERAÇÃO DE SEGURANÇA
     let emailRecuperacaoGlobal = "";
-    document.getElementById('btn-enviar-codigo').addEventListener('click', () => {
+    document.getElementById('btn-enviar-codigo-seg').addEventListener('click', () => {
       const emailDigitado = document.getElementById('rec-email').value.trim();
-      if (!emailDigitado) return alert("Digite o e-mail.");
+      if (!emailDigitado) {
+        alert("Por favor, digite o e-mail cadastrado.");
+        return;
+      }
 
       emailRecuperacaoGlobal = emailDigitado;
       socket.emit('solicitar-codigo-email', emailDigitado);
@@ -824,7 +824,7 @@
       chatInput.value = '';
     }
 
-    // UPLOAD FOTO NO CHAT DIRETO DA GALERIA
+    // UPLOAD FOTO NO CHAT
     const inputChatFoto = document.getElementById('chat-foto-input');
     document.getElementById('btn-envio-foto').addEventListener('click', () => {
       inputChatFoto.click();
