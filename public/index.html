@@ -200,7 +200,6 @@
       formCad.classList.add('hidden');
     });
 
-    // Função de Autenticação Concluída
     function iniciarSessao(dadosUsuario) {
       meuPerfil = dadosUsuario;
       localStorage.setItem('colae_usuario', JSON.stringify(meuPerfil));
@@ -214,7 +213,7 @@
       renderizarPerfis();
     }
 
-    // Verificar se o usuário já tem login salvo no navegador
+    // Verificar login salvo
     window.addEventListener('load', () => {
       const sessaoSalva = localStorage.getItem('colae_usuario');
       if (sessaoSalva) {
@@ -227,7 +226,7 @@
       }
     });
 
-    // Submeter Cadastro
+    // Submeter Cadastro com Verificação de Duplicidade
     formCad.addEventListener('submit', (e) => {
       e.preventDefault();
       const nome = document.getElementById('cad-nome').value.trim();
@@ -237,6 +236,13 @@
       if (!nick.startsWith('@')) nick = '@' + nick;
       const senha = document.getElementById('cad-senha').value;
 
+      // VERIFICA SE O NICKNAME JÁ FOI CADASTRADO
+      const contaExistente = localStorage.getItem(`colae_account_${nick}`);
+      if (contaExistente) {
+        alert("Este nickname já está em uso! Escolha outro ou vá na aba 'Já tenho conta' para entrar.");
+        return;
+      }
+
       const novoUsuario = {
         nome,
         idade,
@@ -245,7 +251,6 @@
         foto: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80"
       };
 
-      // Salva conta localmente para testes
       localStorage.setItem(`colae_account_${nick}`, JSON.stringify({ ...novoUsuario, senha }));
       iniciarSessao(novoUsuario);
     });
@@ -268,7 +273,7 @@
       alert("Nickname ou senha incorretos!");
     });
 
-    // Logout (Sair da Conta)
+    // Logout
     document.getElementById('btn-logout').addEventListener('click', () => {
       localStorage.removeItem('colae_usuario');
       location.reload();
