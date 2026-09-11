@@ -24,6 +24,17 @@
 </head>
 <body class="bg-black text-white font-sans min-h-screen flex flex-col justify-between selection:bg-[#39FF14] selection:text-black">
 
+  <!-- NOTIFICAÇÃO TOAST -->
+  <div id="toast-notificacao" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border border-[#39FF14] text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 hidden transition-all max-w-xs w-full">
+    <div class="w-10 h-10 rounded-full overflow-hidden border border-[#39FF14] flex-shrink-0">
+      <img id="toast-foto" src="" class="w-full h-full object-cover">
+    </div>
+    <div class="flex-1 overflow-hidden">
+      <h4 id="toast-nome" class="font-bold text-xs text-[#39FF14] truncate">---</h4>
+      <p id="toast-msg" class="text-xs text-zinc-300 truncate">---</p>
+    </div>
+  </div>
+
   <!-- MODAL DE CADASTRO / LOGIN -->
   <div id="login-modal" class="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center p-6 overflow-y-auto">
     <div class="w-full max-w-sm flex flex-col items-center space-y-5 my-auto">
@@ -38,7 +49,7 @@
         <button id="tab-btn-login" type="button" class="flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition font-bold">Já tenho conta</button>
       </div>
 
-      <!-- FORMULÁRIO CADASTRO -->
+      <!-- CADASTRO -->
       <form id="form-cadastro" class="w-full space-y-3">
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Nome de Exibição</label>
@@ -70,7 +81,6 @@
           <input type="password" id="cad-senha" required placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
 
-        <!-- DETALHES DO PERFIL EXPANSÍVEL -->
         <div class="pt-2 border-t border-zinc-900 space-y-2">
           <p class="text-[11px] text-[#39FF14] font-bold uppercase tracking-wider">Perfil Expansível (Opcional)</p>
           <div>
@@ -100,7 +110,7 @@
         </button>
       </form>
 
-      <!-- FORMULÁRIO LOGIN -->
+      <!-- LOGIN -->
       <form id="form-login" class="w-full space-y-3 hidden">
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Seu Nickname</label>
@@ -168,6 +178,7 @@
     <button id="nav-btn-inbox" class="flex flex-col items-center text-zinc-500 hover:text-white relative">
       <i data-lucide="message-square" class="w-5 h-5"></i>
       <span class="text-[10px] font-bold mt-0.5">Conversas</span>
+      <span id="badge-inbox-total" class="absolute -top-1 -right-1 bg-[#39FF14] text-black text-[10px] font-black w-4 h-4 rounded-full hidden flex items-center justify-center border border-black">0</span>
     </button>
   </nav>
 
@@ -253,8 +264,35 @@
     let meuPerfil = null;
     let usuarioAtivoChat = null;
     let usuarioSelecionadoPerfil = null;
-    let usuariosReaisConectados = [];
-    let conversasInbox = {};
+
+    // Cache local permanente para evitar sumiço de dados
+    let usuariosReaisConectados = JSON.parse(localStorage.getItem('colae_cache_perfis') || '[]');
+    let conversasInbox = JSON.parse(localStorage.getItem('colae_inbox') || '{}');
+    let historicoMensagens = JSON.parse(localStorage.getItem('colae_historico_msgs') || '{}');
+
+    function tocarSomNotificacao() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } catch(e) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      atualizarBadgeTotalNaoLidas();
+      renderizarPerfis();
+    });
+
+    socket.on('connect', () => {
+      if (meuPerfil) socket.emit('registrar-usuario', meuPerfil);
+    });
 
     const btnTabCad = document.getElementById('tab-btn-cadastro');
     const btnTabLog = document.getElementById('tab-btn-login');
@@ -357,13 +395,17 @@
       else resetarInatividade();
     });
 
-    // GRADE DE PERFIS REAIS
+    // LISTA E EXPLORAR (PERMANENTE VIA CACHE)
     const grid = document.getElementById('grid-perfis');
     const filterInput = document.getElementById('filter-distancia');
     const labelDistancia = document.getElementById('label-distancia');
 
     socket.on('lista-usuarios-reais', (usuarios) => {
-      usuariosReaisConectados = usuarios.filter(u => u.socketId !== socket.id);
+      const novosPerfis = usuarios.filter(u => u.nick !== (meuPerfil ? meuPerfil.nick : ''));
+      if (novosPerfis.length > 0) {
+        usuariosReaisConectados = novosPerfis;
+        localStorage.setItem('colae_cache_perfis', JSON.stringify(usuariosReaisConectados));
+      }
       renderizarPerfis();
     });
 
@@ -412,7 +454,7 @@
 
     filterInput.addEventListener('input', renderizarPerfis);
 
-    // MODAL DE PERFIL EXPANSÍVEL
+    // MODAL PERFIL DETALHADO
     const modalPerfil = document.getElementById('profile-modal');
     function abrirModalPerfil(user) {
       usuarioSelecionadoPerfil = user;
@@ -444,7 +486,7 @@
       }
     });
 
-    // ABA DE CONVERSAS (INBOX)
+    // ABA INBOX (CONVERSAS)
     const btnNavExplorar = document.getElementById('nav-btn-explorar');
     const btnNavInbox = document.getElementById('nav-btn-inbox');
     const abaExplorar = document.getElementById('aba-explorar');
@@ -457,6 +499,7 @@
       abaExplorar.classList.remove('hidden');
       barraFiltro.classList.remove('hidden');
       abaInbox.classList.add('hidden');
+      lucide.createIcons();
     });
 
     btnNavInbox.addEventListener('click', () => {
@@ -466,6 +509,7 @@
       abaExplorar.classList.add('hidden');
       barraFiltro.classList.add('hidden');
       renderizarInbox();
+      lucide.createIcons();
     });
 
     function renderizarInbox() {
@@ -493,6 +537,7 @@
           </div>
           <div class="text-right">
             <span class="text-[10px] text-zinc-500">${chat.hora}</span>
+            ${chat.naoLidas > 0 ? `<span class="block ml-auto text-[10px] bg-[#39FF14] text-black font-black px-1.5 py-0.5 rounded-full text-center mt-1 w-fit">${chat.naoLidas}</span>` : ''}
           </div>
         `;
         item.addEventListener('click', () => abrirChat(chat, "Perto de você"));
@@ -500,18 +545,52 @@
       });
     }
 
-    // ENVIO E RECEBIMENTO DE MENSAGENS CORRIGIDO
+    function atualizarBadgeTotalNaoLidas() {
+      const chats = Object.values(conversasInbox);
+      const totalNaoLidas = chats.reduce((acc, c) => acc + (c.naoLidas || 0), 0);
+      const badge = document.getElementById('badge-inbox-total');
+      if (totalNaoLidas > 0) {
+        badge.innerText = totalNaoLidas;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // GESTÃO DE CHAT E MENSAGENS INDESTRUTÍVEL
     const modalChat = document.getElementById('chat-modal');
     const messagesBox = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
 
+    function getChatKey(nick1, nick2) {
+      if (!nick1 || !nick2) return nick1 || nick2;
+      return [nick1.toLowerCase(), nick2.toLowerCase()].sort().join('_');
+    }
+
     function abrirChat(targetUser, distancia) {
       if (!meuPerfil) return alert('Faça login primeiro!');
       usuarioAtivoChat = targetUser;
+      
+      const destNick = targetUser.nick || targetUser.socketId;
+      const keyConversa = getChatKey(meuPerfil.nick, destNick);
+
+      if (conversasInbox[destNick]) {
+        conversasInbox[destNick].naoLidas = 0;
+        localStorage.setItem('colae_inbox', JSON.stringify(conversasInbox));
+        atualizarBadgeTotalNaoLidas();
+      }
+
       document.getElementById('chat-user-nome').innerText = targetUser.nome;
       document.getElementById('chat-user-distancia').innerText = distancia;
       messagesBox.innerHTML = '<div class="text-center text-xs text-zinc-600 my-2">Conversa iniciada no Colaê</div>';
+      
+      const msgsData = historicoMensagens[keyConversa] || [];
+      msgsData.forEach(msg => {
+        adicionarMensagemTela(msg.texto, msg.deNick === meuPerfil.nick, msg.tipo === 'imagem');
+      });
+
       modalChat.classList.remove('hidden');
+      lucide.createIcons();
     }
 
     document.getElementById('btn-fechar-chat').addEventListener('click', () => {
@@ -543,26 +622,39 @@
       messagesBox.scrollTop = messagesBox.scrollHeight;
     }
 
+    function salvarMensagemNoHistorico(destNick, deNick, texto, tipo = 'texto') {
+      const keyConversa = getChatKey(meuPerfil.nick, destNick);
+      if (!historicoMensagens[keyConversa]) historicoMensagens[keyConversa] = [];
+      historicoMensagens[keyConversa].push({ deNick, texto, tipo });
+      localStorage.setItem('colae_historico_msgs', JSON.stringify(historicoMensagens));
+    }
+
     function enviarMensagem() {
       const texto = chatInput.value.trim();
       if (!texto || !usuarioAtivoChat) return;
 
       adicionarMensagemTela(texto, true, false);
 
-      const destKey = usuarioAtivoChat.nick || usuarioAtivoChat.socketId;
+      const destNick = usuarioAtivoChat.nick || usuarioAtivoChat.socketId;
 
-      conversasInbox[destKey] = {
+      salvarMensagemNoHistorico(destNick, meuPerfil.nick, texto, 'texto');
+
+      conversasInbox[destNick] = {
         socketId: usuarioAtivoChat.socketId,
-        nick: usuarioAtivoChat.nick,
+        nick: destNick,
         nome: usuarioAtivoChat.nome,
         foto: usuarioAtivoChat.foto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
         ultimaMsg: texto,
-        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        naoLidas: 0
       };
+
+      localStorage.setItem('colae_inbox', JSON.stringify(conversasInbox));
 
       socket.emit('send-private-message', {
         paraId: usuarioAtivoChat.socketId,
-        paraNick: usuarioAtivoChat.nick,
+        paraNick: destNick,
+        deNick: meuPerfil.nick,
         texto: texto,
         tipo: 'texto'
       });
@@ -574,9 +666,13 @@
       const urlFoto = prompt("Cole a URL da foto:");
       if (urlFoto && usuarioAtivoChat) {
         adicionarMensagemTela(urlFoto, true, true);
+        const destNick = usuarioAtivoChat.nick || usuarioAtivoChat.socketId;
+        salvarMensagemNoHistorico(destNick, meuPerfil.nick, urlFoto, 'imagem');
+
         socket.emit('send-private-message', {
           paraId: usuarioAtivoChat.socketId,
-          paraNick: usuarioAtivoChat.nick,
+          paraNick: destNick,
+          deNick: meuPerfil.nick,
           texto: urlFoto,
           tipo: 'imagem'
         });
@@ -586,22 +682,45 @@
     document.getElementById('btn-enviar').addEventListener('click', enviarMensagem);
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); });
 
+    // RECEBIMENTO DE MENSAGENS EM TEMPO REAL
     socket.on('receive-private-message', (data) => {
-      const senderKey = data.deNick || data.deId;
+      const senderNick = data.deNick || data.deId;
+      const chatAberto = usuarioAtivoChat && (usuarioAtivoChat.nick === data.deNick || usuarioAtivoChat.socketId === data.deId) && !modalChat.classList.contains('hidden');
 
-      conversasInbox[senderKey] = {
+      salvarMensagemNoHistorico(senderNick, data.deNick, data.texto, data.tipo);
+
+      const qtdAnterior = (conversasInbox[senderNick] && conversasInbox[senderNick].naoLidas) ? conversasInbox[senderNick].naoLidas : 0;
+
+      conversasInbox[senderNick] = {
         socketId: data.deId,
-        nick: data.deNick,
+        nick: senderNick,
         nome: data.deNome,
         foto: data.deFoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
         ultimaMsg: data.tipo === 'imagem' ? '[Imagem]' : data.texto,
-        hora: data.timestamp
+        hora: data.timestamp,
+        naoLidas: chatAberto ? 0 : (qtdAnterior + 1)
       };
 
-      if (usuarioAtivoChat && (usuarioAtivoChat.nick === data.deNick || usuarioAtivoChat.socketId === data.deId) && !modalChat.classList.contains('hidden')) {
+      localStorage.setItem('colae_inbox', JSON.stringify(conversasInbox));
+      atualizarBadgeTotalNaoLidas();
+
+      if (chatAberto) {
         adicionarMensagemTela(data.texto, false, data.tipo === 'imagem');
+      } else {
+        tocarSomNotificacao();
+        exibirToastNotificacao(data.deNome, data.deFoto, data.tipo === 'imagem' ? 'Enviou uma foto' : data.texto);
       }
     });
+
+    function exibirToastNotificacao(nome, foto, msg) {
+      const toast = document.getElementById('toast-notificacao');
+      document.getElementById('toast-foto').src = foto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80";
+      document.getElementById('toast-nome').innerText = nome;
+      document.getElementById('toast-msg').innerText = msg;
+      
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
   </script>
 </body>
 </html>
