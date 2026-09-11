@@ -4,18 +4,22 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: { origin: "*" }
+});
 
 app.use(express.static('public'));
 
-// Mapeia os usuários por socket.id
+// Armazena usuários por socket ID e por Nick
 let usuariosConectados = {};
 
 io.on('connection', (socket) => {
   console.log('Cliente conectado:', socket.id);
 
-  // Registro ou login do usuário
+  // Registro/Reconexão automática do usuário
   socket.on('registrar-usuario', (dados) => {
+    if (!dados || !dados.nick) return;
+    
     usuariosConectados[socket.id] = {
       socketId: socket.id,
       nick: dados.nick,
@@ -30,11 +34,10 @@ io.on('connection', (socket) => {
       distKm: (Math.random() * 4.5 + 0.1).toFixed(2)
     };
 
-    // Transmite a lista completa para todos
     io.emit('lista-usuarios-reais', Object.values(usuariosConectados));
   });
 
-  // Atualização do status de presença (Verde / Amarelo)
+  // Atualização de Status
   socket.on('change-status', (novoStatus) => {
     if (usuariosConectados[socket.id]) {
       usuariosConectados[socket.id].status = novoStatus;
@@ -42,19 +45,17 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Envio de mensagem privada direcionada pelo Nick/Socket
+  // Mensagem Privada (envio duplo: por nick e por socketId)
   socket.on('send-private-message', (data) => {
     const remetente = usuariosConectados[socket.id];
     
-    // Procura o socketId do destinatário pelo nick ou socketId
-    let destinatarioSocketId = data.paraId;
-    if (data.paraNick) {
-      const dest = Object.values(usuariosConectados).find(u => u.nick === data.paraNick);
-      if (dest) destinatarioSocketId = dest.socketId;
-    }
+    // Procura destinatário por Nick ou por Socket ID
+    const destinatario = Object.values(usuariosConectados).find(
+      u => u.nick === data.paraNick || u.socketId === data.paraId
+    );
 
-    if (destinatarioSocketId) {
-      io.to(destinatarioSocketId).emit('receive-private-message', {
+    if (destinatario) {
+      io.to(destinatario.socketId).emit('receive-private-message', {
         deId: socket.id,
         deNick: remetente ? remetente.nick : '',
         deNome: remetente ? remetente.nome : 'Usuário',
@@ -66,7 +67,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Desconexão
   socket.on('disconnect', () => {
     delete usuariosConectados[socket.id];
     io.emit('lista-usuarios-reais', Object.values(usuariosConectados));
