@@ -12,28 +12,29 @@ const io = new Server(server, {
 
 app.use(express.static('public'));
 
-let contasCadastradas = {};
+let contasCadastradas = {}; // nickKey -> dados do usuário
 let socketsConectados = {}; // socket.id -> nickKey
 
 io.on('connection', (socket) => {
-  console.log('Cliente conectado:', socket.id);
+  console.log('Novo cliente conectado:', socket.id);
 
+  // Envia a lista atual de usuários ao conectar
   socket.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
     const { senha, ...perfilPublico } = u;
     return perfilPublico;
   }));
 
-  // REGISTRO AUTOMÁTICO / RECUPERAÇÃO DE SESSÃO SALVA
+  // REGISTRO E RECUPERAÇÃO DE SESSÃO (Auto-cura caso o servidor tenha reiniciado)
   socket.on('registrar-usuario', (dados) => {
     if (!dados || !dados.nick) return;
     const nickKey = dados.nick.toLowerCase();
 
-    // Se o servidor reiniciou mas o cliente tem sessão salva, recriamos a conta na memória automaticamente
     if (!contasCadastradas[nickKey]) {
+      // Recria o perfil na memória do servidor caso tenha sido apagado por hibernação
       contasCadastradas[nickKey] = {
         nick: dados.nick,
         senha: dados.senha || '123456',
-        nome: dados.nome || 'Usuário',
+        nome: dados.nome || dados.nick.replace('@', ''),
         email: dados.email || '',
         idade: dados.idade || 18,
         sexo: dados.sexo || 'Outro',
@@ -46,12 +47,16 @@ io.on('connection', (socket) => {
         distKm: dados.distKm || (Math.random() * 4.5 + 0.1).toFixed(2)
       };
     } else {
+      // Atualiza o socketId atual da conexão ativa
       contasCadastradas[nickKey].socketId = socket.id;
       contasCadastradas[nickKey].status = 'online';
+      if (dados.foto) contasCadastradas[nickKey].foto = dados.foto;
+      if (dados.nome) contasCadastradas[nickKey].nome = dados.nome;
     }
 
     socketsConectados[socket.id] = nickKey;
 
+    // Transmite a lista atualizada para todos os clientes conectados
     io.emit('lista-usuarios-reais', Object.values(contasCadastradas).map(u => {
       const { senha, ...p } = u;
       return p;
@@ -97,7 +102,6 @@ io.on('connection', (socket) => {
     const nickKey = dados.nick.toLowerCase();
     let conta = contasCadastradas[nickKey];
 
-    // Se a conta não existe na memória (servidor reiniciou), criamos temporariamente para permitir o login
     if (!conta) {
       conta = {
         nick: dados.nick,
@@ -136,15 +140,9 @@ io.on('connection', (socket) => {
   socket.on('solicitar-codigo-email', (email) => {
     const emailProc = (email || '').toLowerCase();
     const conta = Object.values(contasCadastradas).find(u => u.email === emailProc);
+    const codigo = '123456';
+    if (conta) conta.codigoRecuperacao = codigo;
 
-    if (!conta) {
-      // Simulação para testes caso o servidor tenha reiniciado
-      socket.emit('resposta-codigo-email', { sucesso: true, codigo: '123456', email: emailProc });
-      return;
-    }
-
-    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
-    conta.codigoRecuperacao = codigo;
     socket.emit('resposta-codigo-email', { sucesso: true, codigo: codigo, email: emailProc });
   });
 
@@ -157,7 +155,7 @@ io.on('connection', (socket) => {
       const { senha, ...perfilPublico } = conta;
       socket.emit('resposta-redefinicao-senha', { sucesso: true, usuario: perfilPublico });
     } else {
-      socket.emit('resposta-redefinicao-senha', { sucesso: false, erro: 'Conta não encontrada na sessão atual.' });
+      socket.emit('resposta-redefinicao-senha', { sucesso: false, erro: 'Conta não encontrada.' });
     }
   });
 
@@ -173,15 +171,20 @@ io.on('connection', (socket) => {
     }
   });
 
-  // MENSAGEM PRIVADA BLINDADA
+  // MENSAGEM PRIVADA COM RESOLUÇÃO INTELIGENTE DE DESTINATÁRIO
   socket.on('send-private-message', (data) => {
     const remetenteNickKey = socketsConectados[socket.id];
-    const remetente = remetenteNickKey ? contasCadastradas[remetenteNickKey] : null;
+    let remetente = remetenteNickKey ? contasCadastradas[remetenteNickKey] : null;
+
+    // Se o remetente não estiver mapeado no socket atual, tenta achar pelo nick enviado nos dados
+    if (!remetente && data.deNick) {
+      remetente = contasCadastradas[data.deNick.toLowerCase()];
+    }
     
     const destNickKey = (data.paraNick || '').toLowerCase();
     let destinatario = contasCadastradas[destNickKey];
 
-    // Se não encontrou pelo nick, tenta buscar pelo socketId correspondente
+    // Se não encontrou pelo nick, busca por socketId correspondente
     if (!destinatario && data.paraId) {
       const nickEncontrado = socketsConectados[data.paraId];
       if (nickEncontrado) destinatario = contasCadastradas[nickEncontrado];
