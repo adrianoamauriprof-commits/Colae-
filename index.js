@@ -8,14 +8,22 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static('public'));
 
-let usuariosConectados = {};
+// Base de todos os usuários cadastrados no sistema
+let todosUsuariosCadastrados = {};
+// Mapeamento de socketId para nickname
+let socketsConectados = {};
 
 io.on('connection', (socket) => {
+  console.log('Cliente conectado:', socket.id);
+
+  // Registro ou Reconexão de usuário
   socket.on('registrar-usuario', (dados) => {
     if (!dados || !dados.nick) return;
-    
-    usuariosConectados[socket.id] = {
-      socketId: socket.id,
+
+    const nickKey = dados.nick.toLowerCase();
+
+    // Atualiza ou cria o registro do usuário na base geral
+    todosUsuariosCadastrados[nickKey] = {
       nick: dados.nick,
       nome: dados.nome,
       idade: dados.idade,
@@ -24,27 +32,35 @@ io.on('connection', (socket) => {
       bio: dados.bio || "",
       altura: dados.altura || "",
       procura: dados.procura || "Trocar uma ideia",
-      status: 'online',
+      status: 'online', // Ativo ao conectar
+      socketId: socket.id,
       distKm: dados.distKm || (Math.random() * 4.5 + 0.1).toFixed(2)
     };
 
-    io.emit('lista-usuarios-reais', Object.values(usuariosConectados));
+    socketsConectados[socket.id] = nickKey;
+
+    // Emite a lista atualizada de todos os cadastrados para a galera
+    io.emit('lista-usuarios-reais', Object.values(todosUsuariosCadastrados));
   });
 
+  // Atualização de Status (Online / Ausente)
   socket.on('change-status', (novoStatus) => {
-    if (usuariosConectados[socket.id]) {
-      usuariosConectados[socket.id].status = novoStatus;
-      io.emit('lista-usuarios-reais', Object.values(usuariosConectados));
+    const nickKey = socketsConectados[socket.id];
+    if (nickKey && todosUsuariosCadastrados[nickKey]) {
+      todosUsuariosCadastrados[nickKey].status = novoStatus;
+      io.emit('lista-usuarios-reais', Object.values(todosUsuariosCadastrados));
     }
   });
 
+  // Envio de mensagem privada
   socket.on('send-private-message', (data) => {
-    const remetente = usuariosConectados[socket.id];
-    const destinatario = Object.values(usuariosConectados).find(
-      u => u.nick === data.paraNick || u.socketId === data.paraId
-    );
+    const remetenteNickKey = socketsConectados[socket.id];
+    const remetente = remetenteNickKey ? todosUsuariosCadastrados[remetenteNickKey] : null;
 
-    if (destinatario) {
+    const destNickKey = (data.paraNick || '').toLowerCase();
+    const destinatario = todosUsuariosCadastrados[destNickKey];
+
+    if (destinatario && destinatario.socketId) {
       io.to(destinatario.socketId).emit('receive-private-message', {
         deId: socket.id,
         deNick: remetente ? remetente.nick : data.deNick,
@@ -57,9 +73,15 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Ao desconectar, altera o status para offline em vez de deletar o cadastro
   socket.on('disconnect', () => {
-    delete usuariosConectados[socket.id];
-    io.emit('lista-usuarios-reais', Object.values(usuariosConectados));
+    const nickKey = socketsConectados[socket.id];
+    if (nickKey && todosUsuariosCadastrados[nickKey]) {
+      todosUsuariosCadastrados[nickKey].status = 'offline';
+      todosUsuariosCadastrados[nickKey].socketId = null;
+    }
+    delete socketsConectados[socket.id];
+    io.emit('lista-usuarios-reais', Object.values(todosUsuariosCadastrados));
   });
 });
 
