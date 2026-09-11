@@ -8,13 +8,13 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-// Armazena usuários ativos em memória
+// Mapeia os usuários por socket.id
 let usuariosConectados = {};
 
 io.on('connection', (socket) => {
   console.log('Cliente conectado:', socket.id);
 
-  // Registro ou entrada do usuário real
+  // Registro ou login do usuário
   socket.on('registrar-usuario', (dados) => {
     usuariosConectados[socket.id] = {
       socketId: socket.id,
@@ -26,11 +26,11 @@ io.on('connection', (socket) => {
       bio: dados.bio || "",
       altura: dados.altura || "",
       procura: dados.procura || "Trocar uma ideia",
-      status: 'online', // 'online' ou 'away'
-      distKm: (Math.random() * 4.5 + 0.1).toFixed(2), // Simulação de distância via GPS
+      status: 'online',
+      distKm: (Math.random() * 4.5 + 0.1).toFixed(2)
     };
 
-    // Atualiza a lista de todos os conectados
+    // Transmite a lista completa para todos
     io.emit('lista-usuarios-reais', Object.values(usuariosConectados));
   });
 
@@ -42,20 +42,31 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Envio de mensagem privada
+  // Envio de mensagem privada direcionada pelo Nick/Socket
   socket.on('send-private-message', (data) => {
     const remetente = usuariosConectados[socket.id];
-    io.to(data.paraId).emit('receive-private-message', {
-      deId: socket.id,
-      deNome: remetente ? remetente.nome : 'Usuário',
-      deFoto: remetente ? remetente.foto : '',
-      texto: data.texto,
-      tipo: data.tipo || 'texto',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    });
+    
+    // Procura o socketId do destinatário pelo nick ou socketId
+    let destinatarioSocketId = data.paraId;
+    if (data.paraNick) {
+      const dest = Object.values(usuariosConectados).find(u => u.nick === data.paraNick);
+      if (dest) destinatarioSocketId = dest.socketId;
+    }
+
+    if (destinatarioSocketId) {
+      io.to(destinatarioSocketId).emit('receive-private-message', {
+        deId: socket.id,
+        deNick: remetente ? remetente.nick : '',
+        deNome: remetente ? remetente.nome : 'Usuário',
+        deFoto: remetente ? remetente.foto : '',
+        texto: data.texto,
+        tipo: data.tipo || 'texto',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+    }
   });
 
-  // Desconexão (Offline)
+  // Desconexão
   socket.on('disconnect', () => {
     delete usuariosConectados[socket.id];
     io.emit('lista-usuarios-reais', Object.values(usuariosConectados));
