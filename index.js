@@ -10,13 +10,9 @@ const io = new Server(server, {
 
 app.use(express.static('public'));
 
-// Armazena usuários por socket ID e por Nick
 let usuariosConectados = {};
 
 io.on('connection', (socket) => {
-  console.log('Cliente conectado:', socket.id);
-
-  // Registro/Reconexão automática do usuário
   socket.on('registrar-usuario', (dados) => {
     if (!dados || !dados.nick) return;
     
@@ -37,7 +33,6 @@ io.on('connection', (socket) => {
     io.emit('lista-usuarios-reais', Object.values(usuariosConectados));
   });
 
-  // Atualização de Status
   socket.on('change-status', (novoStatus) => {
     if (usuariosConectados[socket.id]) {
       usuariosConectados[socket.id].status = novoStatus;
@@ -45,11 +40,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Mensagem Privada (envio duplo: por nick e por socketId)
   socket.on('send-private-message', (data) => {
     const remetente = usuariosConectados[socket.id];
     
-    // Procura destinatário por Nick ou por Socket ID
     const destinatario = Object.values(usuariosConectados).find(
       u => u.nick === data.paraNick || u.socketId === data.paraId
     );
