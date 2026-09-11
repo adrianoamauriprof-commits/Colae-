@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Colaê - Encontros e Bate-Papo</title>
+  <title>Colaê - Bate-Papo & Encontros Real-Time</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="/socket.io/socket.io.js"></script>
@@ -11,10 +11,6 @@
     .neon-text {
       color: #39FF14;
       text-shadow: 0 0 8px rgba(57, 255, 20, 0.6), 0 0 20px rgba(57, 255, 20, 0.3);
-    }
-    .neon-border {
-      border-color: #39FF14;
-      box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
     }
     .neon-bg {
       background-color: #39FF14;
@@ -28,22 +24,21 @@
 </head>
 <body class="bg-black text-white font-sans min-h-screen flex flex-col justify-between selection:bg-[#39FF14] selection:text-black">
 
-  <!-- TELA DE AUTENTICAÇÃO (CADASTRO / LOGIN) -->
+  <!-- MODAL DE CADASTRO / LOGIN -->
   <div id="login-modal" class="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center p-6 overflow-y-auto">
     <div class="w-full max-w-sm flex flex-col items-center space-y-5 my-auto">
       <div class="text-center space-y-2">
         <i data-lucide="zap" class="text-[#39FF14] w-12 h-12 mx-auto fill-[#39FF14] animate-bounce"></i>
         <h1 class="text-5xl font-black tracking-wider neon-text lowercase">colaê</h1>
-        <p class="text-xs text-zinc-400">Entre com seu nickname ou crie seu perfil para colar com a galera.</p>
+        <p class="text-xs text-zinc-400">Entre com seu nickname ou crie seu perfil para colar com a galera real.</p>
       </div>
 
-      <!-- ABAS PARA ALTERNAR ENTRE LOGIN E CADASTRO -->
       <div class="flex w-full bg-zinc-900 rounded-xl p-1 border border-zinc-800 text-xs font-bold">
         <button id="tab-btn-cadastro" type="button" class="flex-1 py-2 rounded-lg bg-[#39FF14] text-black transition">Criar Conta</button>
         <button id="tab-btn-login" type="button" class="flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition">Já tenho conta</button>
       </div>
 
-      <!-- FORMULÁRIO DE CADASTRO INITIAL -->
+      <!-- FORMULÁRIO CADASTRO -->
       <form id="form-cadastro" class="w-full space-y-3">
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Nome de Exibição</label>
@@ -66,7 +61,7 @@
         </div>
 
         <div>
-          <label class="text-xs text-zinc-400 font-medium block mb-1">Nickname (para acessos futuros)</label>
+          <label class="text-xs text-zinc-400 font-medium block mb-1">Nickname (único)</label>
           <input type="text" id="cad-nick" required placeholder="@rodrigo" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
 
@@ -75,24 +70,46 @@
           <input type="password" id="cad-senha" required placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
 
+        <!-- DETALHES DO PERFIL EXPANSÍVEL -->
+        <div class="pt-2 border-t border-zinc-900 space-y-2">
+          <p class="text-[11px] text-[#39FF14] font-bold uppercase tracking-wider">Perfil Expansível (Opcional)</p>
+          <div>
+            <label class="text-xs text-zinc-400 font-medium block mb-1">Bio / Sobre mim</label>
+            <textarea id="cad-bio" placeholder="Conta um pouco sobre você..." class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#39FF14] transition resize-none h-16"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs text-zinc-400 font-medium block mb-1">Altura (cm)</label>
+              <input type="number" id="cad-altura" placeholder="Ex: 178" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#39FF14] transition">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-400 font-medium block mb-1">Procura no App</label>
+              <select id="cad-procura" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-2 py-2 text-sm focus:outline-none focus:border-[#39FF14] transition">
+                <option value="Trocar uma ideia">Trocar uma ideia</option>
+                <option value="Rolê casual">Rolê casual</option>
+                <option value="Amizade">Amizade</option>
+                <option value="Relacionamento">Relacionamento</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <button type="submit" class="w-full neon-bg text-black font-bold py-3 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4">
           <span>Cadastrar no Colaê</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
       </form>
 
-      <!-- FORMULÁRIO DE LOGIN (RETORNO) -->
+      <!-- FORMULÁRIO LOGIN -->
       <form id="form-login" class="w-full space-y-3 hidden">
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Seu Nickname</label>
           <input type="text" id="login-nick" required placeholder="@rodrigo" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
-
         <div>
           <label class="text-xs text-zinc-400 font-medium block mb-1">Sua Senha</label>
           <input type="password" id="login-senha" required placeholder="••••••••" class="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#39FF14] transition">
         </div>
-
         <button type="submit" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2 mt-4">
           <span>Entrar na Conta</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
@@ -108,10 +125,7 @@
       <h1 class="text-2xl font-black tracking-wider neon-text lowercase">colaê</h1>
     </div>
     <div class="flex items-center gap-2">
-      <button id="btn-gps" class="text-xs neon-bg text-black px-3.5 py-1.5 rounded-full font-bold transition hover:opacity-90 flex items-center gap-1.5">
-        <i data-lucide="locate-fixed" class="w-4 h-4"></i> GPS
-      </button>
-      <button id="btn-logout" title="Sair da Conta" class="text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-full hidden flex items-center gap-1">
+      <button id="btn-logout" title="Sair" class="text-xs bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white px-2.5 py-1.5 rounded-full hidden flex items-center gap-1">
         <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
       </button>
       <div id="minha-foto-header" class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden hidden">
@@ -120,8 +134,8 @@
     </div>
   </header>
 
-  <!-- BARRA DE RECURSOS: FILTRO DE DISTÂNCIA -->
-  <div class="bg-zinc-950 px-4 py-2 text-xs border-b border-zinc-900 space-y-2">
+  <!-- FILTRO DE DISTÂNCIA -->
+  <div id="barra-filtro" class="bg-zinc-950 px-4 py-2 text-xs border-b border-zinc-900 space-y-2">
     <div class="flex justify-between items-center">
       <span class="text-zinc-400 flex items-center gap-1">
         <i data-lucide="sliders" class="w-3.5 h-3.5 text-[#39FF14]"></i> Raio de Distância:
@@ -131,14 +145,84 @@
     <input type="range" id="filter-distancia" min="0.5" max="10" step="0.5" value="5" class="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#39FF14]">
   </div>
 
-  <!-- GRADE DE PERFIS -->
-  <main class="flex-1 p-2 sm:p-4">
-    <div id="grid-perfis" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-      <!-- Perfis renderizados via JS -->
+  <!-- CONTEÚDO PRINCIPAL (EXPLORAR OU INBOX) -->
+  <main class="flex-1 p-2 sm:p-4 mb-14">
+    <!-- ABA EXPLORAR (PERFIS) -->
+    <div id="aba-explorar">
+      <div id="grid-perfis" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5"></div>
+    </div>
+
+    <!-- ABA INBOX (CONVERSAS) -->
+    <div id="aba-inbox" class="hidden">
+      <h2 class="text-base font-bold text-white mb-3 flex items-center gap-2">
+        <i data-lucide="message-square" class="text-[#39FF14] w-5 h-5"></i> Suas Conversas
+      </h2>
+      <div id="inbox-lista" class="space-y-1"></div>
     </div>
   </main>
 
-  <!-- JANELA DE CHAT (MODAL) -->
+  <!-- NAVEGAÇÃO INFERIOR (BOTTOM BAR) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950 border-t border-zinc-900 flex justify-around py-2.5">
+    <button id="nav-btn-explorar" class="flex flex-col items-center text-[#39FF14]">
+      <i data-lucide="flame" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold mt-0.5">Explorar</span>
+    </button>
+    <button id="nav-btn-inbox" class="flex flex-col items-center text-zinc-500 hover:text-white relative">
+      <i data-lucide="message-square" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold mt-0.5">Conversas</span>
+      <span id="badge-inbox-total" class="absolute -top-1 right-2 bg-[#39FF14] text-black text-[9px] font-bold w-4 h-4 rounded-full hidden flex items-center justify-center">0</span>
+    </button>
+  </nav>
+
+  <!-- MODAL DE PERFIL EXPANSÍVEL DETALHADO -->
+  <div id="profile-modal" class="fixed inset-0 z-50 bg-black/95 flex flex-col justify-end hidden">
+    <div class="bg-zinc-950 border-t border-zinc-800 rounded-t-3xl max-h-[90vh] overflow-y-auto p-5 relative space-y-4">
+      <button id="btn-fechar-perfil" class="absolute top-4 right-4 p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center space-x-4">
+        <div class="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-[#39FF14]">
+          <img id="prof-modal-foto" src="" class="w-full h-full object-cover">
+        </div>
+        <div>
+          <h2 id="prof-modal-nome-idade" class="text-xl font-bold text-white">---</h2>
+          <p id="prof-modal-nick" class="text-xs text-zinc-400">@---</p>
+          <div class="flex items-center gap-2 mt-1">
+            <span id="prof-modal-status-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#39FF14]/20 text-[#39FF14] border border-[#39FF14]">
+              ● Online
+            </span>
+            <span id="prof-modal-distancia" class="text-xs text-zinc-400">---</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-3 pt-2">
+        <div class="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800">
+          <p class="text-[11px] text-zinc-400 font-medium">Sobre mim</p>
+          <p id="prof-modal-bio" class="text-sm text-zinc-200 mt-0.5">Sem bio cadastrada.</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div class="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800">
+            <p class="text-[11px] text-zinc-400 font-medium">Altura</p>
+            <p id="prof-modal-altura" class="text-sm font-bold text-white">-- cm</p>
+          </div>
+          <div class="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800">
+            <p class="text-[11px] text-zinc-400 font-medium">Procura no App</p>
+            <p id="prof-modal-procura" class="text-sm font-bold text-[#39FF14]">---</p>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-iniciar-chat-perfil" class="w-full neon-bg text-black font-bold py-3.5 rounded-xl text-sm transition hover:opacity-90 flex justify-center items-center gap-2">
+        <i data-lucide="message-square" class="w-4 h-4"></i>
+        <span>Mandar Mensagem Privada</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- JANELA DE CHAT -->
   <div id="chat-modal" class="fixed inset-0 bg-black z-50 flex flex-col hidden">
     <div class="bg-zinc-950 px-4 py-3 border-b border-zinc-900 flex justify-between items-center">
       <div class="flex items-center space-x-3">
@@ -170,17 +254,12 @@
   <script>
     const socket = io();
     let meuPerfil = null;
-    let usuarioAtivoId = null;
+    let usuarioAtivoChat = null;
+    let usuarioSelecionadoPerfil = null;
+    let usuariosReaisConectados = [];
+    let conversasInbox = {};
 
-    const usuariosDemo = [
-      { id: "demo_1", nome: "Lucas", idade: 24, sexo: "Masculino", distKm: 0.15, distanciaStr: "150 m", foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80", online: true },
-      { id: "demo_2", nome: "Mateus", idade: 28, sexo: "Masculino", distKm: 0.5, distanciaStr: "500 m", foto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80", online: true },
-      { id: "demo_3", nome: "Gabriel", idade: 22, sexo: "Masculino", distKm: 1.2, distanciaStr: "1.2 km", foto: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=80", online: false },
-      { id: "demo_4", nome: "Rodrigo", idade: 30, sexo: "Masculino", distKm: 2.5, distanciaStr: "2.5 km", foto: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=500&auto=format&fit=crop&q=80", online: true },
-      { id: "demo_5", nome: "Felipe", idade: 27, sexo: "Masculino", distKm: 4.8, distanciaStr: "4.8 km", foto: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=500&auto=format&fit=crop&q=80", online: true }
-    ];
-
-    // Alternar entre abas de cadastro e login
+    // Alternar Cadastro / Login
     const btnTabCad = document.getElementById('tab-btn-cadastro');
     const btnTabLog = document.getElementById('tab-btn-login');
     const formCad = document.getElementById('form-cadastro');
@@ -210,102 +289,115 @@
       document.getElementById('btn-logout').classList.remove('hidden');
 
       socket.emit('registrar-usuario', meuPerfil);
-      renderizarPerfis();
     }
 
-    // Verificar login salvo
+    // Auto-login
     window.addEventListener('load', () => {
       const sessaoSalva = localStorage.getItem('colae_usuario');
       if (sessaoSalva) {
-        try {
-          const perfilSalvo = JSON.parse(sessaoSalva);
-          iniciarSessao(perfilSalvo);
-        } catch(e) {
-          localStorage.removeItem('colae_usuario');
-        }
+        try { iniciarSessao(JSON.parse(sessaoSalva)); } 
+        catch(e) { localStorage.removeItem('colae_usuario'); }
       }
     });
 
-    // Submeter Cadastro com Verificação de Duplicidade
     formCad.addEventListener('submit', (e) => {
       e.preventDefault();
-      const nome = document.getElementById('cad-nome').value.trim();
-      const idade = document.getElementById('cad-idade').value;
-      const sexo = document.getElementById('cad-sexo').value;
       let nick = document.getElementById('cad-nick').value.trim().toLowerCase();
       if (!nick.startsWith('@')) nick = '@' + nick;
-      const senha = document.getElementById('cad-senha').value;
 
-      // VERIFICA SE O NICKNAME JÁ FOI CADASTRADO
-      const contaExistente = localStorage.getItem(`colae_account_${nick}`);
-      if (contaExistente) {
-        alert("Este nickname já está em uso! Escolha outro ou vá na aba 'Já tenho conta' para entrar.");
+      if (localStorage.getItem(`colae_account_${nick}`)) {
+        alert("Este nickname já está em uso!");
         return;
       }
 
       const novoUsuario = {
-        nome,
-        idade,
-        sexo,
+        nome: document.getElementById('cad-nome').value.trim(),
+        idade: document.getElementById('cad-idade').value,
+        sexo: document.getElementById('cad-sexo').value,
         nick,
+        bio: document.getElementById('cad-bio').value.trim(),
+        altura: document.getElementById('cad-altura').value,
+        procura: document.getElementById('cad-procura').value,
         foto: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80"
       };
 
-      localStorage.setItem(`colae_account_${nick}`, JSON.stringify({ ...novoUsuario, senha }));
+      localStorage.setItem(`colae_account_${nick}`, JSON.stringify({ ...novoUsuario, senha: document.getElementById('cad-senha').value }));
       iniciarSessao(novoUsuario);
     });
 
-    // Submeter Login
     formLog.addEventListener('submit', (e) => {
       e.preventDefault();
       let nick = document.getElementById('login-nick').value.trim().toLowerCase();
       if (!nick.startsWith('@')) nick = '@' + nick;
-      const senha = document.getElementById('login-senha').value;
+      const conta = localStorage.getItem(`colae_account_${nick}`);
 
-      const contaLocal = localStorage.getItem(`colae_account_${nick}`);
-      if (contaLocal) {
-        const conta = JSON.parse(contaLocal);
-        if (conta.senha === senha) {
-          iniciarSessao(conta);
+      if (conta) {
+        const dados = JSON.parse(conta);
+        if (dados.senha === document.getElementById('login-senha').value) {
+          iniciarSessao(dados);
           return;
         }
       }
       alert("Nickname ou senha incorretos!");
     });
 
-    // Logout
     document.getElementById('btn-logout').addEventListener('click', () => {
       localStorage.removeItem('colae_usuario');
       location.reload();
     });
 
-    // Renderizar Perfis
+    // SISTEMA DE STATUS VERDE (ONLINE) / AMARELO (AUSENTE)
+    let tempoInatividade;
+    function resetarInatividade() {
+      clearTimeout(tempoInatividade);
+      socket.emit('change-status', 'online');
+      tempoInatividade = setTimeout(() => {
+        socket.emit('change-status', 'away');
+      }, 120000); // 2 minutos
+    }
+    window.addEventListener('mousemove', resetarInatividade);
+    window.addEventListener('touchstart', resetarInatividade);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) socket.emit('change-status', 'away');
+      else resetarInatividade();
+    });
+
+    // RECEBER LISTA DE USUÁRIOS REAIS
     const grid = document.getElementById('grid-perfis');
     const filterInput = document.getElementById('filter-distancia');
     const labelDistancia = document.getElementById('label-distancia');
+
+    socket.on('lista-usuarios-reais', (usuarios) => {
+      usuariosReaisConectados = usuarios.filter(u => u.socketId !== socket.id);
+      renderizarPerfis();
+    });
 
     function renderizarPerfis() {
       grid.innerHTML = '';
       const limiteKm = parseFloat(filterInput.value);
       labelDistancia.innerText = `Até ${limiteKm.toFixed(1)} km`;
 
-      const filtrados = usuariosDemo.filter(u => u.distKm <= limiteKm);
+      const filtrados = usuariosReaisConectados.filter(u => parseFloat(u.distKm) <= limiteKm);
 
       if (filtrados.length === 0) {
-        grid.innerHTML = `<p class="col-span-full text-center text-xs text-zinc-500 py-8">Ninguém encontrado nesse raio. Aumente o filtro de distância!</p>`;
+        grid.innerHTML = `<p class="col-span-full text-center text-xs text-zinc-500 py-12">Nenhum usuário real conectado no raio selecionado.</p>`;
         return;
       }
 
       filtrados.forEach(user => {
         const card = document.createElement('div');
         card.className = "relative group cursor-pointer overflow-hidden rounded-xl bg-zinc-950 border border-zinc-900 shadow-md transition hover:border-[#39FF14]";
+        
+        // Cor do status: Verde (online) / Amarelo (away)
+        const statusCor = user.status === 'online' ? 'bg-[#39FF14]' : 'bg-yellow-400';
+
         card.innerHTML = `
           <div class="aspect-square w-full overflow-hidden relative">
-            <img src="${user.foto}" alt="${user.nome}" class="w-full h-full object-cover">
+            <img src="${user.foto}" class="w-full h-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
           </div>
           <div class="absolute top-2 right-2">
-            <span class="w-3 h-3 rounded-full block border-2 border-black ${user.online ? 'bg-[#39FF14]' : 'bg-zinc-600'}"></span>
+            <span class="w-3.5 h-3.5 rounded-full block border-2 border-black ${statusCor}"></span>
           </div>
           <div class="absolute bottom-0 left-0 right-0 p-2.5 text-white">
             <div class="flex items-baseline space-x-1">
@@ -313,12 +405,12 @@
               <span class="text-xs text-zinc-400">${user.idade}</span>
             </div>
             <p class="text-[11px] text-[#39FF14] font-medium flex items-center gap-0.5 mt-0.5">
-              <i data-lucide="navigation" class="w-3 h-3 fill-[#39FF14]"></i> ${user.distanciaStr}
+              <i data-lucide="navigation" class="w-3 h-3 fill-[#39FF14]"></i> ${user.distKm} km
             </p>
           </div>
         `;
 
-        card.addEventListener('click', () => abrirChat(user.id, user.nome, user.distanciaStr));
+        card.addEventListener('click', () => abrirModalPerfil(user));
         grid.appendChild(card);
       });
 
@@ -326,16 +418,103 @@
     }
 
     filterInput.addEventListener('input', renderizarPerfis);
-    renderizarPerfis();
 
-    // Lógica do Modal de Chat
+    // MODAL DE PERFIL EXPANSÍVEL
+    const modalPerfil = document.getElementById('profile-modal');
+    function abrirModalPerfil(user) {
+      usuarioSelecionadoPerfil = user;
+      document.getElementById('prof-modal-foto').src = user.foto;
+      document.getElementById('prof-modal-nome-idade').innerText = `${user.nome}, ${user.idade}`;
+      document.getElementById('prof-modal-nick').innerText = user.nick;
+      document.getElementById('prof-modal-bio').innerText = user.bio || "Sem bio informada.";
+      document.getElementById('prof-modal-altura').innerText = user.altura ? `${user.altura} cm` : "-- cm";
+      document.getElementById('prof-modal-procura').innerText = user.procura || "Trocar uma ideia";
+      document.getElementById('prof-modal-distancia').innerText = `a ${user.distKm} km de você`;
+
+      const badgeStatus = document.getElementById('prof-modal-status-badge');
+      if (user.status === 'online') {
+        badgeStatus.className = "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#39FF14]/20 text-[#39FF14] border border-[#39FF14]";
+        badgeStatus.innerText = "● Online";
+      } else {
+        badgeStatus.className = "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-400/20 text-yellow-400 border border-yellow-400";
+        badgeStatus.innerText = "● Ausente";
+      }
+
+      modalPerfil.classList.remove('hidden');
+    }
+
+    document.getElementById('btn-fechar-perfil').addEventListener('click', () => modalPerfil.classList.add('hidden'));
+    document.getElementById('btn-iniciar-chat-perfil').addEventListener('click', () => {
+      modalPerfil.classList.add('hidden');
+      if (usuarioSelecionadoPerfil) {
+        abrirChat(usuarioSelecionadoPerfil.socketId, usuarioSelecionadoPerfil.nome, `${usuarioSelecionadoPerfil.distKm} km`);
+      }
+    });
+
+    // ABA DE CONVERSAS (INBOX)
+    const btnNavExplorar = document.getElementById('nav-btn-explorar');
+    const btnNavInbox = document.getElementById('nav-btn-inbox');
+    const abaExplorar = document.getElementById('aba-explorar');
+    const abaInbox = document.getElementById('aba-inbox');
+    const barraFiltro = document.getElementById('barra-filtro');
+
+    btnNavExplorar.addEventListener('click', () => {
+      btnNavExplorar.className = "flex flex-col items-center text-[#39FF14]";
+      btnNavInbox.className = "flex flex-col items-center text-zinc-500 hover:text-white relative";
+      abaExplorar.classList.remove('hidden');
+      barraFiltro.classList.remove('hidden');
+      abaInbox.classList.add('hidden');
+    });
+
+    btnNavInbox.addEventListener('click', () => {
+      btnNavInbox.className = "flex flex-col items-center text-[#39FF14] relative";
+      btnNavExplorar.className = "flex flex-col items-center text-zinc-500 hover:text-white";
+      abaInbox.classList.remove('hidden');
+      abaExplorar.classList.add('hidden');
+      barraFiltro.classList.add('hidden');
+      renderizarInbox();
+    });
+
+    function renderizarInbox() {
+      const inboxContainer = document.getElementById('inbox-lista');
+      inboxContainer.innerHTML = '';
+      const chats = Object.values(conversasInbox);
+
+      if (chats.length === 0) {
+        inboxContainer.innerHTML = `<p class="text-center text-xs text-zinc-500 py-12">Sua caixa de entrada está vazia. Mande um Colaê para alguém!</p>`;
+        return;
+      }
+
+      chats.forEach(chat => {
+        const item = document.createElement('div');
+        item.className = "flex items-center justify-between p-3 bg-zinc-950 border border-zinc-900 rounded-xl cursor-pointer hover:border-[#39FF14] transition";
+        item.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <div class="relative w-12 h-12 rounded-full overflow-hidden border border-zinc-800">
+              <img src="${chat.foto}" class="w-full h-full object-cover">
+            </div>
+            <div>
+              <h4 class="font-bold text-sm text-white">${chat.nome}</h4>
+              <p class="text-xs text-zinc-400 truncate max-w-[180px]">${chat.ultimaMsg}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] text-zinc-500">${chat.hora}</span>
+          </div>
+        `;
+        item.addEventListener('click', () => abrirChat(chat.socketId, chat.nome, "Perto de você"));
+        inboxContainer.appendChild(item);
+      });
+    }
+
+    // CHAT PRIVADO & BALÕES (VERDE NEON / CINZA)
     const modalChat = document.getElementById('chat-modal');
     const messagesBox = document.getElementById('chat-messages');
     const chatInput = document.getElementById('chat-input');
 
-    function abrirChat(id, nome, distancia) {
-      if (!meuPerfil) return alert('Faça o login primeiro!');
-      usuarioAtivoId = id;
+    function abrirChat(socketId, nome, distancia) {
+      if (!meuPerfil) return alert('Faça login primeiro!');
+      usuarioAtivoChat = { socketId, nome };
       document.getElementById('chat-user-nome').innerText = nome;
       document.getElementById('chat-user-distancia').innerText = distancia;
       messagesBox.innerHTML = '<div class="text-center text-xs text-zinc-600 my-2">Conversa iniciada no Colaê</div>';
@@ -344,7 +523,7 @@
 
     document.getElementById('btn-fechar-chat').addEventListener('click', () => {
       modalChat.classList.add('hidden');
-      usuarioAtivoId = null;
+      usuarioAtivoChat = null;
     });
 
     function adicionarMensagemTela(conteudo, eMinha = true, eImagem = false) {
@@ -355,8 +534,13 @@
       if (eImagem) {
         inner = `<img src="${conteudo}" class="max-w-[220px] rounded-2xl border border-zinc-800 shadow-md">`;
       } else {
+        // Balão enviado = Verde Neon | Balão recebido = Cinza
+        const estiloBalao = eMinha 
+          ? 'bg-[#39FF14] text-black font-semibold' 
+          : 'bg-zinc-900 text-white border border-zinc-800';
+
         inner = `
-          <div class="${eMinha ? 'bg-[#39FF14] text-black font-medium' : 'bg-zinc-900 text-white border border-zinc-800'} text-sm px-4 py-2 rounded-2xl ${eMinha ? 'rounded-tr-none' : 'rounded-tl-none'} max-w-[80%] shadow-lg">
+          <div class="${estiloBalao} text-sm px-4 py-2.5 rounded-2xl ${eMinha ? 'rounded-tr-none' : 'rounded-tl-none'} max-w-[80%] shadow-lg">
             ${conteudo}
           </div>
         `;
@@ -369,13 +553,21 @@
 
     function enviarMensagem() {
       const texto = chatInput.value.trim();
-      if (!texto || !usuarioAtivoId) return;
+      if (!texto || !usuarioAtivoChat) return;
 
       adicionarMensagemTela(texto, true, false);
 
+      // Salva na Inbox
+      conversasInbox[usuarioAtivoChat.socketId] = {
+        socketId: usuarioAtivoChat.socketId,
+        nome: usuarioAtivoChat.nome,
+        foto: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
+        ultimaMsg: texto,
+        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
       socket.emit('send-private-message', {
-        paraId: usuarioAtivoId,
-        deNome: meuPerfil.nome,
+        paraId: usuarioAtivoChat.socketId,
         texto: texto,
         tipo: 'texto'
       });
@@ -384,12 +576,11 @@
     }
 
     document.getElementById('btn-envio-foto').addEventListener('click', () => {
-      const urlFoto = prompt("Cole a URL da foto que deseja enviar:");
-      if (urlFoto && usuarioAtivoId) {
+      const urlFoto = prompt("Cole a URL da foto:");
+      if (urlFoto && usuarioAtivoChat) {
         adicionarMensagemTela(urlFoto, true, true);
         socket.emit('send-private-message', {
-          paraId: usuarioAtivoId,
-          deNome: meuPerfil.nome,
+          paraId: usuarioAtivoChat.socketId,
           texto: urlFoto,
           tipo: 'imagem'
         });
@@ -400,7 +591,16 @@
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarMensagem(); });
 
     socket.on('receive-private-message', (data) => {
-      if (!modalChat.classList.contains('hidden')) {
+      // Salva na Inbox
+      conversasInbox[data.deId] = {
+        socketId: data.deId,
+        nome: data.deNome,
+        foto: data.deFoto || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=500&auto=format&fit=crop&q=80",
+        ultimaMsg: data.tipo === 'imagem' ? '[Imagem]' : data.texto,
+        hora: data.timestamp
+      };
+
+      if (usuarioAtivoChat && usuarioAtivoChat.socketId === data.deId && !modalChat.classList.contains('hidden')) {
         adicionarMensagemTela(data.texto, false, data.tipo === 'imagem');
       }
     });
